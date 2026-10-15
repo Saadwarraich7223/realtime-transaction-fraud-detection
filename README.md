@@ -80,8 +80,8 @@ The model was developed using a stratified 80/20 train/test split on 5,000 empir
 
 ### 1. Clone & Navigate
 ```bash
-git clone https://github.com/YOUR_USERNAME/fraudguard-ai.git
-cd fraudguard-ai
+git clone https://github.com/Saadwarraich7223/realtime-transaction-fraud-detection.git
+cd realtime-transaction-fraud-detection
 ```
 
 ### 2. Set Up Virtual Environment
