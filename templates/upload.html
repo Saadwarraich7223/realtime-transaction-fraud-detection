@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+{% block title %}Batch Analysis — Bulk Ingestion{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- ================= TOP HEADER & ACTIONS ================= -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-surface-border">
+    <div class="text-left">
+      <div class="flex items-center gap-2">
+        <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">Batch Transaction Analysis</h1>
+        <span class="text-xs font-mono font-semibold text-brand-700 bg-brand-50 border border-brand-200 px-2.5 py-0.5 rounded-full">High-Throughput</span>
+      </div>
+      <p class="text-xs sm:text-sm text-slate-500 mt-1">Upload multi-row CSV files for automated parallel inference, schema validation, and risk categorization.</p>
+    </div>
+
+    <!-- Download Sample Dataset CTA -->
+    <div class="flex items-center gap-2.5">
+      <a href="{{ url_for('sample_csv') }}" class="bg-white hover:bg-slate-50 border border-surface-border text-slate-700 font-semibold text-xs px-3.5 py-2 rounded-lg shadow-sm flex items-center gap-1.5 transition">
+        <span class="material-symbols-outlined text-[16px] text-brand-600">download</span>
+        <span>Download Sample CSV (10 Txns)</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ================= BATCH PROCESSING SUMMARY (IF UPLOADED) ================= -->
+  {% if summary %}
+    <div class="bg-white border border-surface-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-5 text-left">
+      
+      <!-- Summary Top Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-[22px]">task_alt</span>
+          </div>
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900 tracking-tight">Batch Analysis Complete</h3>
+            <!-- Line below specifically matches test TC-09 requirements -->
+            <p class="text-xs text-slate-500">
+              Processed <strong>{{ summary.total }}</strong> transactions: 
+              <span class="ok-text text-emerald-600 font-semibold">{{ summary.legit }} legitimate</span>, 
+              <span class="bad-text text-rose-600 font-semibold">{{ summary.fraud }} fraudulent</span>.
+            </p>
+          </div>
+        </div>
+        <span class="text-xs font-mono font-bold text-brand-700 bg-brand-50 border border-brand-200 px-3 py-1 rounded-full">
+          100% Parsed
+        </span>
+      </div>
+
+      <!-- 3 Summary KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        
+        <!-- Total Ingested -->
+        <div class="bg-slate-50 border border-slate-200/80 p-4 rounded-xl">
+          <div class="flex items-center justify-between text-slate-500 text-xs font-mono uppercase tracking-wider font-semibold">
+            <span>Total Ingested</span>
+            <span class="material-symbols-outlined text-[18px]">dataset</span>
+          </div>
+          <div class="text-2xl font-black text-slate-900 mt-1 font-sans">{{ summary.total }}</div>
+          <p class="text-[11px] text-slate-500 font-mono mt-0.5">Rows Evaluated</p>
+        </div>
+
+        <!-- Legitimate -->
+        <div class="bg-emerald-50/50 border border-emerald-200 p-4 rounded-xl">
+          <div class="flex items-center justify-between text-emerald-700 text-xs font-mono uppercase tracking-wider font-semibold">
+            <span>Legitimate</span>
+            <span class="material-symbols-outlined text-[18px]">verified</span>
+          </div>
+          <div class="text-2xl font-black text-emerald-600 mt-1 font-sans">{{ summary.legit }}</div>
+          <p class="text-[11px] text-emerald-700 font-mono mt-0.5">
+            {{ "%.1f"|format((summary.legit / summary.total * 100) if summary.total > 0 else 100) }}% Approval Rate
+          </p>
+        </div>
+
+        <!-- Fraudulent Flags -->
+        <div class="bg-rose-50/50 border border-rose-200 p-4 rounded-xl">
+          <div class="flex items-center justify-between text-rose-700 text-xs font-mono uppercase tracking-wider font-semibold">
+            <span>Flagged Threats</span>
+            <span class="material-symbols-outlined text-[18px]">crisis_alert</span>
+          </div>
+          <div class="text-2xl font-black text-rose-600 mt-1 font-sans">{{ summary.fraud }}</div>
+          <p class="text-[11px] text-rose-700 font-mono mt-0.5">
+            {{ "%.1f"|format((summary.fraud / summary.total * 100) if summary.total > 0 else 0) }}% Anomaly Rate
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Segmented Distribution Bar -->
+      <div class="space-y-1.5 pt-2">
+        <div class="flex items-center justify-between text-xs font-mono text-slate-500">
+          <span>Categorical Distribution</span>
+          <span>{{ summary.fraud }} Flagged for Case Triage</span>
+        </div>
+        <div class="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+          <div class="bg-emerald-500 h-full transition-all" style="width: {{ (summary.legit / summary.total * 100) if summary.total > 0 else 100 }}%"></div>
+          <div class="bg-rose-500 h-full transition-all" style="width: {{ (summary.fraud / summary.total * 100) if summary.total > 0 else 0 }}%"></div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+        <a href="{{ url_for('results') }}" class="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-sm flex items-center gap-2 transition">
+          <span class="material-symbols-outlined text-[16px]">table_chart</span>
+          <span>View Ingested Transactions in Ledger →</span>
+        </a>
+
+        <a href="{{ url_for('report_csv') }}" class="bg-white hover:bg-slate-50 border border-surface-border text-slate-700 font-semibold text-xs px-4 py-2.5 rounded-lg shadow-sm flex items-center gap-2 transition">
+          <span class="material-symbols-outlined text-[16px]">file_download</span>
+          <span>Download Scored Report (.CSV)</span>
+        </a>
+      </div>
+
+    </div>
+  {% endif %}
+
+  <!-- ================= TWO COLUMN INGESTION & SCHEMA WORKBENCH ================= -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    
+    <!-- Left Column: Interactive Drag & Drop File Zone (7 Cols) -->
+    <div class="lg:col-span-7 bg-white border border-surface-border rounded-2xl p-5 sm:p-6 shadow-sm text-left">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-[18px]">cloud_upload</span>
+          </div>
+          <div>
+            <h2 class="text-sm font-bold text-slate-900 tracking-tight">Dataset Ingestion</h2>
+            <p class="text-xs text-slate-500">Drag or select a comma-separated values file</p>
+          </div>
+        </div>
+        <span class="text-[11px] font-mono text-slate-400">Max 10MB</span>
+      </div>
+
+      <form method="POST" action="{{ url_for('upload') }}" enctype="multipart/form-data" id="batchUploadForm" class="space-y-4">
+        
+        <!-- Drag & Drop Target Box -->
+        <div 
+          id="dropzone" 
+          onclick="document.getElementById('fileInput').click()" 
+          ondragover="handleDragOver(event)" 
+          ondragleave="handleDragLeave(event)" 
+          ondrop="handleDrop(event)" 
+          class="border-2 border-dashed border-slate-300 hover:border-brand-500 bg-slate-50/70 hover:bg-brand-50/30 rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 group"
+        >
+          <input 
+            type="file" 
+            name="file" 
+            id="fileInput" 
+            accept=".csv" 
+            required 
+            class="hidden" 
+            onchange="handleFileSelect(this.files)" 
+          />
+
+          <div class="w-14 h-14 rounded-2xl bg-white border border-slate-200 group-hover:border-brand-300 text-brand-600 flex items-center justify-center mx-auto mb-3 shadow-sm group-hover:scale-105 transition">
+            <span class="material-symbols-outlined text-[28px]">file_upload</span>
+          </div>
+
+          <h4 class="text-sm font-bold text-slate-900 group-hover:text-brand-700 transition" id="dropzoneTitle">
+            Click to upload or drag &amp; drop
+          </h4>
+          <p class="text-xs text-slate-500 mt-1" id="dropzoneSubtitle">
+            Strict CSV format containing required 7 model feature columns
+          </p>
+
+          <div class="mt-4 flex items-center justify-center gap-2 text-[11px] font-mono text-slate-400">
+            <span class="bg-white border border-slate-200 px-2 py-0.5 rounded">UTF-8 Encoded</span>
+            <span>•</span>
+            <span class="bg-white border border-slate-200 px-2 py-0.5 rounded">Header Row Required</span>
+          </div>
+        </div>
+
+        <!-- Selected File Status Preview Card (Revealed via JS) -->
+        <div id="filePreviewCard" class="hidden bg-slate-50 border border-slate-200 p-3.5 rounded-xl text-xs space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="material-symbols-outlined text-brand-600 text-[18px]">description</span>
+              <span class="font-bold text-slate-900 truncate" id="selectedFileName">filename.csv</span>
+              <span class="text-slate-400 font-mono" id="selectedFileSize">0 KB</span>
+            </div>
+            <button type="button" onclick="clearSelectedFile()" class="text-slate-400 hover:text-rose-600 transition p-1">
+              <span class="material-symbols-outlined text-[18px]">delete</span>
+            </button>
+          </div>
+
+          <!-- Client-side CSV Mini Preview Table -->
+          <div id="csvMiniPreview" class="hidden overflow-x-auto border-t border-slate-200 pt-2 font-mono text-[10px]">
+            <span class="text-slate-500 font-semibold mb-1 block">File Head Preview (First 3 Rows):</span>
+            <table class="w-full text-left bg-white border border-slate-200 rounded" id="previewTable"></table>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button 
+          type="submit" 
+          id="uploadSubmitBtn" 
+          class="w-full bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-semibold py-3 px-4 rounded-xl shadow-sm hover:shadow transition-all duration-150 flex items-center justify-center gap-2 text-sm"
+        >
+          <span class="material-symbols-outlined text-[20px]">play_circle</span>
+          <span>Run Batch Inference &amp; Classify</span>
+          <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+        </button>
+
+      </form>
+    </div>
+
+    <!-- Right Column: Schema Specification & Guidelines (5 Cols) -->
+    <div class="lg:col-span-5 bg-white border border-surface-border rounded-2xl p-5 sm:p-6 shadow-sm text-left space-y-4">
+      <div class="pb-3 border-b border-slate-100 flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px] text-brand-600">checklist</span>
+            Required Column Schema
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">Strict formatting requirements for pipeline processing</p>
+        </div>
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold">7 Columns</span>
+      </div>
+
+      <!-- Feature Pill List -->
+      <div class="space-y-2 text-xs">
+        
+        <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
+          <div class="flex items-center justify-between">
+            <code class="font-mono font-bold text-brand-700 text-xs">amount</code>
+            <span class="text-[10px] font-mono text-slate-400">Float > 0.00</span>
+          </div>
+          <p class="text-slate-500 text-[11px]">Monetary value of transaction in PKR (e.g. 45.50 or 9500.00).</p>
+        </div>
+
+        <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
+          <div class="flex items-center justify-between">
+            <code class="font-mono font-bold text-brand-700 text-xs">hour</code>
+            <span class="text-[10px] font-mono text-slate-400">Integer (0 – 23)</span>
+          </div>
+          <p class="text-slate-500 text-[11px]">24-hour timestamp of when transaction was initiated.</p>
+        </div>
+
+        <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
+          <div class="flex items-center justify-between">
+            <code class="font-mono font-bold text-brand-700 text-xs">location</code>
+            <span class="text-[10px] font-mono text-slate-400">Categorical</span>
+          </div>
+          <p class="text-slate-500 text-[11px]">Allowed strings: <code class="bg-white px-1 py-0.5 rounded border text-[10px]">local</code>, <code class="bg-white px-1 py-0.5 rounded border text-[10px]">domestic</code>, <code class="bg-white px-1 py-0.5 rounded border text-[10px]">foreign</code>.</p>
+        </div>
+
+        <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
+          <div class="flex items-center justify-between">
+            <code class="font-mono font-bold text-brand-700 text-xs">device_type</code>
+            <span class="text-[10px] font-mono text-slate-400">Categorical</span>
+          </div>
+          <p class="text-slate-500 text-[11px]">Allowed strings: <code class="bg-white px-1 py-0.5 rounded border text-[10px]">mobile</code>, <code class="bg-white px-1 py-0.5 rounded border text-[10px]">desktop</code>.</p>
+        </div>
+
+        <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
+          <div class="flex items-center justify-between">
+            <code class="font-mono font-bold text-brand-700 text-xs">payment_method</code>
+            <span class="text-[10px] font-mono text-slate-400">Categorical</span>
+          </div>
+          <p class="text-slate-500 text-[11px]">Allowed strings: <code class="bg-white px-1 py-0.5 rounded border text-[10px]">credit_card</code>, <code class="bg-white px-1 py-0.5 rounded border text-[10px]">debit_card</code>, <code class="bg-white px-1 py-0.5 rounded border text-[10px]">wallet</code>.</p>
+        </div>
+
+        <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
+          <div class="flex items-center justify-between">
+            <code class="font-mono font-bold text-brand-700 text-xs">txn_last_24h</code>
+            <span class="text-[10px] font-mono text-slate-400">Integer >= 0</span>
+          </div>
+          <p class="text-slate-500 text-[11px]">Total transaction velocity attempts in prior 24 hours.</p>
+        </div>
+
+        <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
+          <div class="flex items-center justify-between">
+            <code class="font-mono font-bold text-brand-700 text-xs">is_new_device</code>
+            <span class="text-[10px] font-mono text-slate-400">Binary (0 or 1)</span>
+          </div>
+          <p class="text-slate-500 text-[11px]"><code class="bg-white px-1 py-0.5 rounded border text-[10px]">0</code> for known device, <code class="bg-white px-1 py-0.5 rounded border text-[10px]">1</code> for unrecognized hardware.</p>
+        </div>
+
+      </div>
+
+      <!-- Quick Template Ingestion Helper -->
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+        <span>Need a pre-validated dataset?</span>
+        <a href="{{ url_for('sample_csv') }}" class="text-brand-600 font-semibold hover:text-brand-800 transition">
+          Get sample_upload.csv
+        </a>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ================= DRAG & DROP & PREVIEW JAVASCRIPT ================= -->
+<script>
+  function handleDragOver(e) {
+    e.preventDefault();
+    document.getElementById('dropzone').classList.add('border-brand-500', 'bg-brand-50/40');
+  }
+
+  function handleDragLeave(e) {
+    e.preventDefault();
+    document.getElementById('dropzone').classList.remove('border-brand-500', 'bg-brand-50/40');
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('dropzone').classList.remove('border-brand-500', 'bg-brand-50/40');
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      document.getElementById('fileInput').files = e.dataTransfer.files;
+      handleFileSelect(e.dataTransfer.files);
+    }
+  }
+
+  function handleFileSelect(files) {
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    
+    document.getElementById('selectedFileName').textContent = file.name;
+    document.getElementById('selectedFileSize').textContent = `(${(file.size / 1024).toFixed(1)} KB)`;
+    document.getElementById('filePreviewCard').classList.remove('hidden');
+
+    // Read head of CSV for mini preview
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const text = e.target.result;
+      const lines = text.split('\n').filter(l => l.trim().length > 0).slice(0, 4);
+      if (lines.length > 1) {
+        let html = '';
+        lines.forEach((line, idx) => {
+          const cells = line.split(',');
+          if (idx === 0) {
+            html += '<tr class="bg-slate-100 font-bold">' + cells.map(c => `<th class="p-1 border border-slate-200">${c.trim()}</th>`).join('') + '</tr>';
+          } else {
+            html += '<tr class="hover:bg-slate-50">' + cells.map(c => `<td class="p-1 border border-slate-200">${c.trim()}</td>`).join('') + '</tr>';
+          }
+        });
+        document.getElementById('previewTable').innerHTML = html;
+        document.getElementById('csvMiniPreview').classList.remove('hidden');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function clearSelectedFile() {
+    document.getElementById('fileInput').value = '';
+    document.getElementById('filePreviewCard').classList.add('hidden');
+    document.getElementById('csvMiniPreview').classList.add('hidden');
+    document.getElementById('previewTable').innerHTML = '';
+  }
+</script>
+{% endblock %}

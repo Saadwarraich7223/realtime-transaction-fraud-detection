@@ -1,0 +1,377 @@
+{% extends "base.html" %}
+
+{% block title %}Workstation & Security Settings — FraudGuard AI{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-6xl mx-auto">
+
+  <!-- ================= BREADCRUMB & HEADER ================= -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-surface-border">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Workstation & Detection Settings</h1>
+      <p class="text-xs text-slate-500 mt-0.5">Manage analyst credentials, operational risk sensitivity thresholds, and ML engine governance parameters.</p>
+    </div>
+
+    <!-- Active Station Status Badge -->
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 px-3 py-1.5 bg-white border border-surface-border rounded-xl shadow-xs text-xs">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="font-mono text-slate-600">ID: <strong class="text-slate-800">#AN-{{ user.user_id }}</strong></span>
+        <span class="text-slate-300">|</span>
+        <span class="px-1.5 py-0.5 rounded bg-brand-50 text-brand-700 font-mono text-[10px] font-bold uppercase">{{ user.role }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MAIN TWO-COLUMN LAYOUT ================= -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- LEFT COLUMN: Profile & Security (5 cols) -->
+    <div class="lg:col-span-5 space-y-6">
+
+      <!-- CARD 1: Analyst Profile -->
+      <div class="bg-white border border-surface-border rounded-2xl shadow-xs p-6">
+        <div class="flex items-center justify-between pb-4 border-b border-surface-border mb-5">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center">
+              <span class="material-symbols-outlined text-[18px]">badge</span>
+            </div>
+            <div>
+              <h2 class="text-sm font-bold text-slate-900">Analyst Identity</h2>
+              <p class="text-[11px] text-slate-500">Personal workstation details & station display name</p>
+            </div>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold uppercase">Profile</span>
+        </div>
+
+        <form method="POST" action="{{ url_for('settings') }}" class="space-y-4">
+          <input type="hidden" name="action" value="profile">
+
+          <!-- Avatar & Role Display -->
+          <div class="flex items-center gap-3.5 p-3.5 bg-slate-50 rounded-xl border border-slate-200/70 mb-4">
+            <div class="w-12 h-12 rounded-xl bg-brand-600 text-white font-bold text-base flex items-center justify-center shadow-xs">
+              {{ (user.name or 'AN')[:2].upper() }}
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-bold text-slate-900 truncate">{{ user.name }}</span>
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-brand-100 text-brand-800 uppercase">{{ user.role }}</span>
+              </div>
+              <p class="text-xs font-mono text-slate-500 truncate">@{{ user.username }}</p>
+              <p class="text-[10px] text-slate-400 mt-0.5">Enrolled: {{ user.created_at[:10] if user.created_at else 'System Initialization' }}</p>
+            </div>
+          </div>
+
+          <!-- Username (Readonly) -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1.5">System Username</label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-[18px]">person</span>
+              <input type="text" value="{{ user.username }}" readonly class="w-full bg-slate-100/80 border border-slate-200 text-slate-500 text-xs rounded-xl py-2 pl-9 pr-3 cursor-not-allowed font-mono">
+            </div>
+            <p class="text-[10px] text-slate-400 mt-1">Unique system identifier bound to internal audit records.</p>
+          </div>
+
+          <!-- Display Name (Editable) -->
+          <div>
+            <label for="name" class="block text-xs font-semibold text-slate-700 mb-1.5">Full Name / Display Alias</label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-[18px]">edit</span>
+              <input type="text" id="name" name="name" value="{{ user.name }}" required class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl py-2 pl-9 pr-3 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/10 focus:outline-none transition">
+            </div>
+          </div>
+
+          <button type="submit" class="w-full mt-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs py-2.5 rounded-xl shadow-xs transition flex items-center justify-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px]">check</span>
+            <span>Update Profile</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- CARD 2: Security & Password -->
+      <div class="bg-white border border-surface-border rounded-2xl shadow-xs p-6">
+        <div class="flex items-center justify-between pb-4 border-b border-surface-border mb-5">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+              <span class="material-symbols-outlined text-[18px]">lock</span>
+            </div>
+            <div>
+              <h2 class="text-sm font-bold text-slate-900">Workstation Security</h2>
+              <p class="text-[11px] text-slate-500">Update encrypted password authentication token</p>
+            </div>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 font-semibold uppercase">Auth</span>
+        </div>
+
+        <form method="POST" action="{{ url_for('settings') }}" class="space-y-4">
+          <input type="hidden" name="action" value="password">
+
+          <!-- Current Password -->
+          <div>
+            <label for="current_password" class="block text-xs font-semibold text-slate-700 mb-1.5">Current Station Password</label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-[18px]">key</span>
+              <input type="password" id="current_password" name="current_password" required placeholder="••••••••••••" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl py-2 pl-9 pr-3 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/10 focus:outline-none transition font-mono">
+            </div>
+          </div>
+
+          <!-- New Password -->
+          <div>
+            <label for="new_password" class="block text-xs font-semibold text-slate-700 mb-1.5">New Password</label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-[18px]">lock_reset</span>
+              <input type="password" id="new_password" name="new_password" required minlength="6" placeholder="Min. 6 characters" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl py-2 pl-9 pr-3 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/10 focus:outline-none transition font-mono">
+            </div>
+          </div>
+
+          <!-- Confirm Password -->
+          <div>
+            <label for="confirm_password" class="block text-xs font-semibold text-slate-700 mb-1.5">Confirm New Password</label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-[18px]">check_circle</span>
+              <input type="password" id="confirm_password" name="confirm_password" required minlength="6" placeholder="Re-type new password" class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl py-2 pl-9 pr-3 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/10 focus:outline-none transition font-mono">
+            </div>
+          </div>
+
+          <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-500 space-y-1">
+            <div class="flex items-center gap-1.5 font-medium text-slate-700">
+              <span class="material-symbols-outlined text-[15px] text-brand-600">security</span>
+              <span>Security Policy</span>
+            </div>
+            <p>Hashes are salted and encrypted via PBKDF2:SHA256 for maximum resilience against brute-force attacks.</p>
+          </div>
+
+          <button type="submit" class="w-full mt-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs py-2.5 rounded-xl shadow-xs transition flex items-center justify-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px]">lock_clock</span>
+            <span>Update Credentials</span>
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: Risk Engine Thresholds & System Governance (7 cols) -->
+    <div class="lg:col-span-7 space-y-6">
+
+      <!-- CARD 3: Risk Thresholds & Operational Sensitivity -->
+      <div class="bg-white border border-surface-border rounded-2xl shadow-xs p-6">
+        <div class="flex items-center justify-between pb-4 border-b border-surface-border mb-5">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+              <span class="material-symbols-outlined text-[18px]">tune</span>
+            </div>
+            <div>
+              <h2 class="text-sm font-bold text-slate-900">Detection Rules & Sensitivity Thresholds</h2>
+              <p class="text-[11px] text-slate-500">Fine-tune classification boundary and threat heuristics</p>
+            </div>
+          </div>
+          {% if session.role == 'admin' %}
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-semibold uppercase">Operational Rules</span>
+          {% else %}
+            <span class="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold uppercase flex items-center gap-1 border border-slate-200">
+              <span class="material-symbols-outlined text-[13px]">lock</span> Read-Only (Admin Restricted)
+            </span>
+          {% endif %}
+        </div>
+
+        <form method="POST" action="{{ url_for('settings') }}" class="space-y-6">
+          <input type="hidden" name="action" value="thresholds">
+
+          <!-- 1. Decision Boundary Slider -->
+          <div class="space-y-2 p-4 bg-slate-50/70 rounded-xl border border-slate-200">
+            <div class="flex items-center justify-between">
+              <div>
+                <label for="decision_threshold" class="text-xs font-bold text-slate-800">Fraud Flag Decision Boundary</label>
+                <p class="text-[11px] text-slate-500">Inference probability score above which transactions are flagged as fraudulent.</p>
+              </div>
+              <span id="thresholdValBadge" class="px-2.5 py-1 rounded-lg bg-brand-100 text-brand-800 font-mono text-xs font-bold">{{ settings.decision_threshold }}</span>
+            </div>
+
+            <input 
+              type="range" 
+              id="decision_threshold" 
+              name="decision_threshold" 
+              min="0.10" 
+              max="0.90" 
+              step="0.05" 
+              value="{{ settings.decision_threshold }}" 
+              {% if session.role != 'admin' %}disabled class="w-full accent-slate-400 h-2 bg-slate-200 rounded-lg cursor-not-allowed opacity-60"{% else %}class="w-full accent-brand-600 h-2 bg-slate-200 rounded-lg cursor-pointer transition"{% endif %}
+              oninput="document.getElementById('thresholdValBadge').textContent = parseFloat(this.value).toFixed(2)"
+            />
+
+            <div class="flex justify-between text-[10px] font-mono text-slate-400">
+              <span>0.10 (Aggressive / High Alerts)</span>
+              <span>0.50 (Standard Balanced)</span>
+              <span>0.90 (Conservative / Low FP)</span>
+            </div>
+          </div>
+
+          <!-- 2. Dual Inputs: Velocity & Amount Cap -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- 24h Velocity Spike -->
+            <div>
+              <label for="velocity_threshold" class="block text-xs font-semibold text-slate-700 mb-1.5">24h Velocity Alert Cap</label>
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-[18px]">speed</span>
+                <input 
+                  type="number" 
+                  id="velocity_threshold" 
+                  name="velocity_threshold" 
+                  min="1" 
+                  max="50" 
+                  value="{{ settings.velocity_threshold }}" 
+                  required 
+                  {% if session.role != 'admin' %}disabled class="w-full bg-slate-100 border border-slate-200 text-slate-500 text-xs rounded-xl py-2 pl-9 pr-3 cursor-not-allowed font-mono"{% else %}class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl py-2 pl-9 pr-3 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/10 focus:outline-none transition font-mono"{% endif %}
+                >
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1">Triggers high-velocity anomaly warning when attempts exceed count.</p>
+            </div>
+
+            <!-- High Amount Ceiling -->
+            <div>
+              <label for="high_amount_threshold" class="block text-xs font-semibold text-slate-700 mb-1.5">High-Value Flag Threshold (PKR)</label>
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-[18px]">payments</span>
+                <input 
+                  type="number" 
+                  id="high_amount_threshold" 
+                  name="high_amount_threshold" 
+                  min="100" 
+                  step="50" 
+                  value="{{ settings.high_amount_threshold }}" 
+                  required 
+                  {% if session.role != 'admin' %}disabled class="w-full bg-slate-100 border border-slate-200 text-slate-500 text-xs rounded-xl py-2 pl-9 pr-3 cursor-not-allowed font-mono"{% else %}class="w-full bg-white border border-slate-300 text-slate-800 text-xs rounded-xl py-2 pl-9 pr-3 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/10 focus:outline-none transition font-mono"{% endif %}
+                >
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1">Transactions equal or above this trigger large capital protection alerts.</p>
+            </div>
+          </div>
+
+          <!-- 3. Toggles: Strict Geofencing & Audio Alert Chimes -->
+          <div class="space-y-3 pt-2">
+            <!-- Audio Chimes -->
+            <label class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl {% if session.role == 'admin' %}cursor-pointer hover:bg-slate-100/70{% else %}cursor-not-allowed opacity-80{% endif %} transition">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <span class="material-symbols-outlined text-[18px]">volume_up</span>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-slate-800">Synthesized Audio Threat Chimes</div>
+                  <div class="text-[11px] text-slate-500">Play dual-tone cyber acoustic chime when critical fraud is detected.</div>
+                </div>
+              </div>
+              <input type="checkbox" name="audio_alerts" value="true" {% if settings.audio_alerts == 'true' %}checked{% endif %} {% if session.role != 'admin' %}disabled{% endif %} class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300">
+            </label>
+
+            <!-- Strict Geofence -->
+            <label class="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl {% if session.role == 'admin' %}cursor-pointer hover:bg-slate-100/70{% else %}cursor-not-allowed opacity-80{% endif %} transition">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                  <span class="material-symbols-outlined text-[18px]">public_off</span>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-slate-800">Strict Foreign Geofencing Mode</div>
+                  <div class="text-[11px] text-slate-500">Mandate secondary step-up challenge on all non-domestic transactions.</div>
+                </div>
+              </div>
+              <input type="checkbox" name="strict_geofence" value="true" {% if settings.strict_geofence == 'true' %}checked{% endif %} {% if session.role != 'admin' %}disabled{% endif %} class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300">
+            </label>
+          </div>
+
+          <!-- Submit Buttons OR Privilege Notice -->
+          {% if session.role == 'admin' %}
+            <div class="flex items-center justify-between pt-2">
+              <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow-xs transition flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px]">save</span>
+                <span>Save Operational Rules</span>
+              </button>
+
+              <button type="submit" form="resetForm" class="text-slate-500 hover:text-slate-800 text-xs font-medium px-3 py-2 rounded-lg hover:bg-slate-100 transition flex items-center gap-1">
+                <span class="material-symbols-outlined text-[16px]">restart_alt</span>
+                <span>Restore Defaults</span>
+              </button>
+            </div>
+          {% else %}
+            <div class="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center gap-2.5">
+              <span class="material-symbols-outlined text-[20px] text-amber-600 shrink-0">lock</span>
+              <div>
+                <span class="font-bold">Privilege Boundary:</span> Modifying core machine learning decision boundaries and global risk rules requires <strong>Lead SOC Administrator</strong> privileges. Standard Analysts operate in read-only policy mode.
+              </div>
+            </div>
+          {% endif %}
+        </form>
+
+        {% if session.role == 'admin' %}
+        <form id="resetForm" method="POST" action="{{ url_for('settings') }}">
+          <input type="hidden" name="action" value="reset_defaults">
+        </form>
+        {% endif %}
+      </div>
+
+      <!-- CARD 4: Telemetry Governance & Architecture Statistics -->
+      <div class="bg-white border border-surface-border rounded-2xl shadow-xs p-6">
+        <div class="flex items-center justify-between pb-4 border-b border-surface-border mb-5">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <span class="material-symbols-outlined text-[18px]">dns</span>
+            </div>
+            <div>
+              <h2 class="text-sm font-bold text-slate-900">System Governance & Storage Architecture</h2>
+              <p class="text-[11px] text-slate-500">Database health, model artifacts, and telemetry capacity</p>
+            </div>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-semibold uppercase">Hardware & IO</span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/70 text-center">
+            <div class="text-[10px] font-mono text-slate-400 uppercase font-semibold">Registered Analysts</div>
+            <div class="text-lg font-bold font-mono text-slate-900 mt-0.5">{{ stats.users_count }}</div>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/70 text-center">
+            <div class="text-[10px] font-mono text-slate-400 uppercase font-semibold">Total Txn Records</div>
+            <div class="text-lg font-bold font-mono text-slate-900 mt-0.5">{{ stats.txn_count }}</div>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/70 text-center">
+            <div class="text-[10px] font-mono text-slate-400 uppercase font-semibold">ML Predictions</div>
+            <div class="text-lg font-bold font-mono text-slate-900 mt-0.5">{{ stats.pred_count }}</div>
+          </div>
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/70 text-center">
+            <div class="text-[10px] font-mono text-slate-400 uppercase font-semibold">Fraud Incidents</div>
+            <div class="text-lg font-bold font-mono text-rose-600 mt-0.5">{{ stats.alert_count }}</div>
+          </div>
+        </div>
+
+        <div class="space-y-2 text-xs">
+          <div class="flex items-center justify-between py-2 border-b border-slate-100">
+            <span class="text-slate-500">Primary Database Engine</span>
+            <span class="font-mono font-semibold text-slate-800">SQLite 3.x (scam_detection.db)</span>
+          </div>
+          <div class="flex items-center justify-between py-2 border-b border-slate-100">
+            <span class="text-slate-500">Database Disk Footprint</span>
+            <span class="font-mono font-semibold text-slate-800">{{ stats.db_size_kb }} KB</span>
+          </div>
+          <div class="flex items-center justify-between py-2 border-b border-slate-100">
+            <span class="text-slate-500">Active ML Pipeline Artifact</span>
+            <span class="font-mono font-semibold text-slate-800">RandomForest-v1 (model.pkl • {{ stats.model_size_kb }} KB)</span>
+          </div>
+          <div class="flex items-center justify-between py-2 border-b border-slate-100">
+            <span class="text-slate-500">Inference Runtime Engine</span>
+            <span class="font-mono font-semibold text-slate-800">scikit-learn 1.9.1 / Python 3.12</span>
+          </div>
+          <div class="flex items-center justify-between py-2">
+            <span class="text-slate-500">Audit Export Endpoint</span>
+            <a href="{{ url_for('report_csv') }}" class="text-brand-600 font-semibold hover:underline flex items-center gap-1 font-mono text-[11px]">
+              <span>Download report.csv</span>
+              <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

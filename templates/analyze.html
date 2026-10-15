@@ -1,0 +1,445 @@
+{% extends "base.html" %}
+{% block title %}Detect Fraud — Single Transaction Intelligence{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- ================= TOP HEADER & QUICK PRESETS ================= -->
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-2 border-b border-surface-border">
+    <div class="text-left">
+      <div class="flex items-center gap-2">
+        <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">Detect Fraud — Transaction Intelligence</h1>
+        <span class="text-xs font-mono font-semibold text-brand-700 bg-brand-50 border border-brand-200 px-2.5 py-0.5 rounded-full">RandomForest-v1</span>
+      </div>
+      <p class="text-xs sm:text-sm text-slate-500 mt-1">Real-time inference engine with Explainable AI (XAI) feature contribution breakdown.</p>
+    </div>
+
+    <!-- Quick Scenario Presets (Simulated Attack Vectors) -->
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 mr-1 hidden sm:inline">Attack Presets:</span>
+      
+      <!-- Preset 1: Normal Legit -->
+      <button 
+        type="button" 
+        onclick="applyPreset(45.00, 14, 'local', 'mobile', 'debit_card', 1, 0)" 
+        class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"
+      >
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+        <span>Normal Daytime (Safe)</span>
+      </button>
+
+      <!-- Preset 2: Critical Fraud -->
+      <button 
+        type="button" 
+        onclick="applyPreset(9500.00, 3, 'foreign', 'mobile', 'credit_card', 12, 1)" 
+        class="bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"
+      >
+        <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
+        <span>3 AM Foreign Velocity (Fraud)</span>
+      </button>
+
+      <!-- Preset 3: Domestic Burst -->
+      <button 
+        type="button" 
+        onclick="applyPreset(3200.00, 23, 'domestic', 'desktop', 'wallet', 8, 1)" 
+        class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"
+      >
+        <span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+        <span>Domestic Burst (Suspicious)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= MAIN TWO-COLUMN WORKBENCH ================= -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    
+    <!-- ================= LEFT COLUMN: TRANSACTION INPUT FORM (6 Cols) ================= -->
+    <div class="lg:col-span-6 bg-white border border-surface-border rounded-2xl p-5 sm:p-6 shadow-sm text-left">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center font-bold">
+            <span class="material-symbols-outlined text-[18px]">tune</span>
+          </div>
+          <div>
+            <h2 class="text-sm font-bold text-slate-900 tracking-tight">Transaction Parameters</h2>
+            <p class="text-xs text-slate-500">Provide financial and behavioral biometric signals</p>
+          </div>
+        </div>
+        <span class="text-[11px] font-mono text-slate-400">7 ML Features</span>
+      </div>
+
+      <form method="POST" action="{{ url_for('analyze') }}" class="space-y-4" id="txnForm">
+        
+        <!-- Amount in PKR -->
+        <div class="space-y-1">
+          <label class="block text-xs font-bold text-slate-700 tracking-wide">
+            Transaction Amount (PKR) <span class="text-rose-500">*</span>
+          </label>
+          <div class="relative flex items-center">
+            <span class="absolute left-3 text-xs font-mono font-bold text-slate-400 pointer-events-none">PKR</span>
+            <input 
+              type="number" 
+              step="0.01" 
+              min="0.01" 
+              name="amount" 
+              id="fieldAmount" 
+              value="{{ result.txn.amount if result else '150.00' }}" 
+              required 
+              placeholder="0.00" 
+              class="w-full bg-slate-50 focus:bg-white border border-slate-300 text-slate-900 font-mono text-sm rounded-lg py-2.5 pl-12 pr-3.5 focus:border-brand-600 focus:ring-4 focus:ring-brand-500/10 focus:outline-none transition"
+            />
+          </div>
+        </div>
+
+        <!-- Two Column Row: Hour of Day & 24h Velocity -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Hour of Day -->
+          <div class="space-y-1">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-bold text-slate-700 tracking-wide">
+                Hour of Day (0–23) <span class="text-rose-500">*</span>
+              </label>
+              <span class="text-[11px] font-mono text-brand-600 font-medium" id="hourIndicator">14:00 (Day)</span>
+            </div>
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-3 text-slate-400 text-[18px] pointer-events-none">schedule</span>
+              <input 
+                type="number" 
+                min="0" 
+                max="23" 
+                name="hour" 
+                id="fieldHour" 
+                value="{{ result.txn.hour if result else '14' }}" 
+                oninput="updateHourHint(this.value)" 
+                required 
+                class="w-full bg-slate-50 focus:bg-white border border-slate-300 text-slate-900 font-mono text-sm rounded-lg py-2.5 pl-10 pr-3.5 focus:border-brand-600 focus:ring-4 focus:ring-brand-500/10 focus:outline-none transition"
+              />
+            </div>
+          </div>
+
+          <!-- Transactions in last 24h -->
+          <div class="space-y-1">
+            <label class="block text-xs font-bold text-slate-700 tracking-wide">
+              Txns in Last 24 Hours <span class="text-rose-500">*</span>
+            </label>
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-3 text-slate-400 text-[18px] pointer-events-none">repeat</span>
+              <input 
+                type="number" 
+                min="0" 
+                name="txn_last_24h" 
+                id="fieldVelocity" 
+                value="{{ result.txn.txn_last_24h if result else '1' }}" 
+                required 
+                class="w-full bg-slate-50 focus:bg-white border border-slate-300 text-slate-900 font-mono text-sm rounded-lg py-2.5 pl-10 pr-3.5 focus:border-brand-600 focus:ring-4 focus:ring-brand-500/10 focus:outline-none transition"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Two Column Row: Location & Device Type -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Location -->
+          <div class="space-y-1">
+            <label class="block text-xs font-bold text-slate-700 tracking-wide">
+              Geolocation Origin <span class="text-rose-500">*</span>
+            </label>
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-3 text-slate-400 text-[18px] pointer-events-none">pin_drop</span>
+              <select 
+                name="location" 
+                id="fieldLocation" 
+                class="w-full bg-slate-50 focus:bg-white border border-slate-300 text-slate-900 text-xs rounded-lg py-2.5 pl-10 pr-8 focus:border-brand-600 focus:ring-4 focus:ring-brand-500/10 focus:outline-none transition cursor-pointer"
+              >
+                <option value="local" {% if result and result.txn.location == 'local' %}selected{% endif %}>Local (Cardholder Perimeter)</option>
+                <option value="domestic" {% if result and result.txn.location == 'domestic' %}selected{% endif %}>Domestic (In-Country Subnet)</option>
+                <option value="foreign" {% if result and result.txn.location == 'foreign' %}selected{% endif %}>Foreign (Cross-Border IP)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Device Type -->
+          <div class="space-y-1">
+            <label class="block text-xs font-bold text-slate-700 tracking-wide">
+              Device Classification <span class="text-rose-500">*</span>
+            </label>
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-3 text-slate-400 text-[18px] pointer-events-none">devices</span>
+              <select 
+                name="device_type" 
+                id="fieldDevice" 
+                class="w-full bg-slate-50 focus:bg-white border border-slate-300 text-slate-900 text-xs rounded-lg py-2.5 pl-10 pr-8 focus:border-brand-600 focus:ring-4 focus:ring-brand-500/10 focus:outline-none transition cursor-pointer"
+              >
+                <option value="mobile" {% if result and result.txn.device_type == 'mobile' %}selected{% endif %}>Mobile Client (iOS / Android)</option>
+                <option value="desktop" {% if result and result.txn.device_type == 'desktop' %}selected{% endif %}>Desktop Browser (Web / Portal)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Two Column Row: Payment Method & New Device -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Payment Method -->
+          <div class="space-y-1">
+            <label class="block text-xs font-bold text-slate-700 tracking-wide">
+              Payment Instrument <span class="text-rose-500">*</span>
+            </label>
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-3 text-slate-400 text-[18px] pointer-events-none">credit_card</span>
+              <select 
+                name="payment_method" 
+                id="fieldMethod" 
+                class="w-full bg-slate-50 focus:bg-white border border-slate-300 text-slate-900 text-xs rounded-lg py-2.5 pl-10 pr-8 focus:border-brand-600 focus:ring-4 focus:ring-brand-500/10 focus:outline-none transition cursor-pointer"
+              >
+                <option value="debit_card" {% if result and result.txn.payment_method == 'debit_card' %}selected{% endif %}>Debit Card (Verified Pin/OTP)</option>
+                <option value="credit_card" {% if result and result.txn.payment_method == 'credit_card' %}selected{% endif %}>Credit Card (Standard POS)</option>
+                <option value="wallet" {% if result and result.txn.payment_method == 'wallet' %}selected{% endif %}>Digital Wallet / Tokenized</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- New Device Toggle -->
+          <div class="space-y-1">
+            <label class="block text-xs font-bold text-slate-700 tracking-wide">
+              Device Registration History <span class="text-rose-500">*</span>
+            </label>
+            <div class="relative flex items-center">
+              <span class="material-symbols-outlined absolute left-3 text-slate-400 text-[18px] pointer-events-none">fingerprint</span>
+              <select 
+                name="is_new_device" 
+                id="fieldNewDevice" 
+                class="w-full bg-slate-50 focus:bg-white border border-slate-300 text-slate-900 text-xs rounded-lg py-2.5 pl-10 pr-8 focus:border-brand-600 focus:ring-4 focus:ring-brand-500/10 focus:outline-none transition cursor-pointer"
+              >
+                <option value="0" {% if result and result.txn.is_new_device == 0 %}selected{% endif %}>Known Authenticated Device (Safe)</option>
+                <option value="1" {% if result and result.txn.is_new_device == 1 %}selected{% endif %}>Unrecognized / New Device (Alert)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit CTA Button -->
+        <div class="pt-2">
+          <button 
+            type="submit" 
+            class="w-full bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-semibold py-3 px-4 rounded-xl shadow-sm hover:shadow transition-all duration-150 flex items-center justify-center gap-2 text-sm"
+          >
+            <span class="material-symbols-outlined text-[20px]">radar</span>
+            <span>Predict Fraud &amp; Evaluate Risk</span>
+            <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- ================= RIGHT COLUMN: PREDICTION & XAI DECISION INTELLIGENCE (6 Cols) ================= -->
+    <div class="lg:col-span-6 space-y-4">
+      
+      {% if result %}
+        <!-- Active Analysis Result Card -->
+        <div class="bg-white border border-surface-border rounded-2xl p-5 sm:p-6 shadow-sm text-left relative overflow-hidden">
+          
+          <!-- Top Verdict Header -->
+          <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div>
+              <span class="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">Analysis Output</span>
+              <h3 class="text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-2 mt-0.5">
+                Transaction #TXN-{{ result.txn_id }}
+              </h3>
+            </div>
+
+            <!-- Verdict Badge (Preserves test keywords FRAUDULENT / LEGITIMATE) -->
+            <div>
+              {% if result.predicted == 'Fraud' %}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold bg-rose-50 text-rose-700 border border-rose-200 shadow-sm">
+                  <span class="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
+                  🔴 FRAUDULENT
+                </span>
+              {% else %}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm">
+                  <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                  🟢 LEGITIMATE
+                </span>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Middle Risk Score & SVG Circular Gauge -->
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 py-5 items-center border-b border-slate-100">
+            
+            <!-- Circular Animated Gauge (5 cols) -->
+            <div class="sm:col-span-5 flex justify-center">
+              <div class="relative w-36 h-36 flex items-center justify-center">
+                <!-- SVG Circle Meter -->
+                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                  <!-- Background Track -->
+                  <circle cx="50" cy="50" r="40" stroke="#f1f5f9" stroke-width="9" fill="transparent" />
+                  <!-- Dynamic Progress Circle -->
+                  <circle 
+                    cx="50" 
+                    cy="50" 
+                    r="40" 
+                    stroke="{% if result.score >= 0.7 %}#EF4444{% elif result.score >= 0.35 %}#F59E0B{% else %}#10B981{% endif %}" 
+                    stroke-width="9" 
+                    stroke-linecap="round" 
+                    fill="transparent" 
+                    stroke-dasharray="251.2" 
+                    stroke-dashoffset="{{ 251.2 - (251.2 * result.score) }}" 
+                    class="transition-all duration-1000 ease-out"
+                  />
+                </svg>
+
+                <!-- Center Gauge Text -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                  <span class="text-2xl font-black font-sans text-slate-900 leading-none">
+                    {{ '%.1f' % (result.score * 100) }}%
+                  </span>
+                  <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 mt-0.5">Risk Score</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Risk Classification Meta (7 cols) -->
+            <div class="sm:col-span-7 space-y-2 text-left">
+              <div>
+                <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-semibold">Triage Tier</span>
+                <div class="text-lg font-bold text-slate-900 flex items-center gap-2 mt-0.5">
+                  <span>{{ result.risk_level }}</span>
+                </div>
+              </div>
+
+              {% if result.predicted == 'Fraud' %}
+                <p class="text-xs text-rose-700 bg-rose-50 border border-rose-200 p-2.5 rounded-xl leading-relaxed">
+                  ⚠️ <strong>Operational Alert Generated:</strong> This transaction breached the anomaly threshold (0.50). An audit case has been logged to the Alerts feed for secondary inspection.
+                </p>
+              {% else %}
+                <p class="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl leading-relaxed">
+                  ✓ <strong>Clear Transaction:</strong> Signal patterns align with legitimate consumer behavior. Transaction recorded in audit ledger.
+                </p>
+              {% endif %}
+            </div>
+
+          </div>
+
+          <!-- Explainable AI (XAI) Decision Drivers -->
+          <div class="pt-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold font-mono uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px] text-brand-600">psychology</span>
+                Key Decision Drivers (XAI Breakdown)
+              </span>
+              <span class="text-[10px] font-mono text-slate-400">Feature Influence</span>
+            </div>
+
+            <!-- Factors List -->
+            <div class="space-y-2">
+              {% for f in result.factors %}
+                <div class="flex items-center justify-between p-2.5 rounded-xl border text-xs transition {% if f.type == 'risk' %}bg-rose-50/50 border-rose-100{% elif f.type == 'safe' %}bg-emerald-50/50 border-emerald-100{% else %}bg-slate-50 border-slate-200{% endif %}">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="material-symbols-outlined text-[18px] shrink-0 {% if f.type == 'risk' %}text-rose-600{% elif f.type == 'safe' %}text-emerald-600{% else %}text-slate-500{% endif %}">
+                      {{ f.icon }}
+                    </span>
+                    <div class="flex flex-col min-w-0">
+                      <span class="font-bold text-slate-900 truncate leading-tight">{{ f.name }}</span>
+                      <span class="text-[11px] text-slate-500 truncate mt-0.5">{{ f.desc }}</span>
+                    </div>
+                  </div>
+                  <span class="font-mono text-[11px] font-bold px-2 py-0.5 rounded shrink-0 ml-2 {% if f.type == 'risk' %}text-rose-700 bg-rose-100{% elif f.type == 'safe' %}text-emerald-700 bg-emerald-100{% else %}text-slate-600 bg-slate-200{% endif %}">
+                    {{ f.impact }}
+                  </span>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Model Governance Disclaimer -->
+          <div class="mt-5 pt-3 border-t border-slate-100 text-[11px] text-slate-400 font-mono leading-relaxed">
+            * Note: Statistical risk scores indicate anomaly probability based on trained historical distributions. A high-risk score triggers investigation rather than permanent denial.
+          </div>
+
+          <!-- Bottom Actions -->
+          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+            <a href="{{ url_for('results') }}" class="text-xs font-semibold text-brand-600 hover:text-brand-800 transition flex items-center gap-1">
+              <span>View in Transactions Ledger</span>
+              <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+            </a>
+            <a href="{{ url_for('analyze') }}" class="text-xs text-slate-500 hover:text-slate-800 font-medium transition">
+              Reset Form
+            </a>
+          </div>
+
+        </div>
+
+      {% else %}
+        <!-- Empty State When No Prediction Made Yet -->
+        <div class="bg-white border border-surface-border rounded-2xl p-8 shadow-sm text-center space-y-4">
+          <div class="w-16 h-16 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto border border-brand-100 shadow-sm">
+            <span class="material-symbols-outlined text-[32px]">query_stats</span>
+          </div>
+          <div class="space-y-1">
+            <h3 class="text-base font-bold text-slate-900">Awaiting Transaction Input</h3>
+            <p class="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+              Enter transaction values on the left or click one of the <strong>Attack Presets</strong> at the top to simulate real-time ML risk scoring and Explainable AI analysis.
+            </p>
+          </div>
+          
+          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 text-left space-y-2 text-xs font-mono">
+            <span class="font-bold text-slate-800 uppercase text-[10px] tracking-wider block">Active Pipeline Capabilities:</span>
+            <div class="flex items-center gap-2 text-slate-600">
+              <span class="w-1.5 h-1.5 rounded-full bg-brand-600"></span>
+              <span>Categorical One-Hot Encoding + Feature Scaling</span>
+            </div>
+            <div class="flex items-center gap-2 text-slate-600">
+              <span class="w-1.5 h-1.5 rounded-full bg-brand-600"></span>
+              <span>100 Random Forest Decision Trees Voting</span>
+            </div>
+            <div class="flex items-center gap-2 text-slate-600">
+              <span class="w-1.5 h-1.5 rounded-full bg-brand-600"></span>
+              <span>Explainable AI (XAI) Factor Decomposition</span>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ================= INTERACTIVE JAVASCRIPT HELPERS ================= -->
+<script>
+  function updateHourHint(val) {
+    const h = parseInt(val, 10);
+    const indicator = document.getElementById('hourIndicator');
+    if (isNaN(h)) return;
+    
+    let timeStr = `${String(h).padStart(2, '0')}:00`;
+    if (h >= 0 && h <= 5) timeStr += ' (Night/Off-Hour)';
+    else if (h >= 6 && h <= 11) timeStr += ' (Morning)';
+    else if (h >= 12 && h <= 17) timeStr += ' (Afternoon)';
+    else if (h >= 18 && h <= 22) timeStr += ' (Evening)';
+    else timeStr += ' (Late Night)';
+
+    if (indicator) indicator.textContent = timeStr;
+  }
+
+  function applyPreset(amount, hour, location, device, method, velocity, newDevice) {
+    document.getElementById('fieldAmount').value = amount;
+    document.getElementById('fieldHour').value = hour;
+    document.getElementById('fieldLocation').value = location;
+    document.getElementById('fieldDevice').value = device;
+    document.getElementById('fieldMethod').value = method;
+    document.getElementById('fieldVelocity').value = velocity;
+    document.getElementById('fieldNewDevice').value = newDevice;
+    updateHourHint(hour);
+
+    // Subtle feedback flash
+    const form = document.getElementById('txnForm');
+    form.classList.add('ring-2', 'ring-brand-500', 'bg-brand-50/20');
+    setTimeout(() => {
+      form.classList.remove('ring-2', 'ring-brand-500', 'bg-brand-50/20');
+    }, 350);
+  }
+</script>
+{% endblock %}

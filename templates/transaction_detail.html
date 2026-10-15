@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}Transaction Forensic Dossier #{{ txn.transaction_id }} — FraudGuard AI{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-7xl mx-auto">
+
+  <!-- ================= BREADCRUMB & HEADER ================= -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-surface-border">
+    <div>
+      <div class="flex items-center gap-2 text-xs font-mono text-slate-400 mb-1">
+        <a href="{{ url_for('results') }}" class="hover:text-slate-700 transition">OPERATIONS</a>
+        <span>/</span>
+        <a href="{{ url_for('results') }}" class="hover:text-slate-700 transition">TRANSACTIONS</a>
+        <span>/</span>
+        <span class="text-brand-600 font-bold">#TXN-{{ txn.transaction_id }}</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Transaction Forensic Dossier</h1>
+        <span class="font-mono text-xs px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold">ID: #{{ txn.transaction_id }}</span>
+      </div>
+      <p class="text-xs text-slate-500 mt-0.5">Comprehensive behavioral telemetry, machine learning risk vectors, and Explainable AI breakdown.</p>
+    </div>
+
+    <!-- Header Actions & Verdict Pill -->
+    <div class="flex items-center gap-2.5 print:hidden">
+      <a 
+        href="{{ url_for('results') }}" 
+        class="bg-white hover:bg-slate-50 border border-surface-border text-slate-700 font-semibold text-xs px-3.5 py-2 rounded-xl shadow-xs flex items-center gap-1.5 transition"
+      >
+        <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+        <span>Back to Ledger</span>
+      </a>
+
+      <button 
+        type="button" 
+        onclick="window.print()" 
+        class="bg-white hover:bg-slate-50 border border-surface-border text-slate-700 font-semibold text-xs px-3.5 py-2 rounded-xl shadow-xs flex items-center gap-1.5 transition"
+      >
+        <span class="material-symbols-outlined text-[16px] text-slate-500">print</span>
+        <span>Print Dossier</span>
+      </button>
+
+      {% if txn.predicted_class == 'Fraud' %}
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 shadow-xs">
+          <span class="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
+          CRITICAL THREAT: FRAUD
+        </span>
+      {% else %}
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-xs">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          VERIFIED: LEGITIMATE
+        </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ================= TOP 4 SUMMARY STAT CARDS ================= -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    
+    <!-- Amount Card -->
+    <div class="bg-white border border-surface-border p-5 rounded-2xl shadow-xs space-y-2">
+      <div class="flex items-center justify-between text-slate-500">
+        <span class="text-xs font-bold uppercase tracking-wider font-mono">Amount Value</span>
+        <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+          <span class="material-symbols-outlined text-[18px]">payments</span>
+        </div>
+      </div>
+      <div class="text-2xl font-black font-sans text-slate-900 tracking-tight">
+        PKR {{ "{:,.2f}".format(txn.amount) }}
+      </div>
+      <div class="text-xs font-mono text-slate-500 pt-1 border-t border-slate-100 flex items-center justify-between">
+        <span>Payment Method</span>
+        <span class="font-bold text-slate-800 capitalize">{{ txn.payment_method.replace('_', ' ') }}</span>
+      </div>
+    </div>
+
+    <!-- ML Risk Score -->
+    <div class="bg-white border border-surface-border p-5 rounded-2xl shadow-xs space-y-2">
+      <div class="flex items-center justify-between text-slate-500">
+        <span class="text-xs font-bold uppercase tracking-wider font-mono {% if score >= 0.5 %}text-rose-700{% else %}text-emerald-700{% endif %}">ML Probability</span>
+        <div class="w-8 h-8 rounded-lg {% if score >= 0.5 %}bg-rose-50 text-rose-600{% else %}bg-emerald-50 text-emerald-600{% endif %} flex items-center justify-center">
+          <span class="material-symbols-outlined text-[18px]">psychology</span>
+        </div>
+      </div>
+      <div class="text-2xl font-black font-sans {% if score >= 0.5 %}text-rose-600{% else %}text-emerald-600{% endif %} tracking-tight">
+        {{ risk_percentage }}%
+      </div>
+      <div class="text-xs font-mono text-slate-500 pt-1 border-t border-slate-100 flex items-center justify-between">
+        <span>Risk Tier</span>
+        <span class="font-bold {% if score >= 0.5 %}text-rose-600{% else %}text-emerald-600{% endif %}">{{ risk_level }}</span>
+      </div>
+    </div>
+
+    <!-- Velocity Card -->
+    <div class="bg-white border border-surface-border p-5 rounded-2xl shadow-xs space-y-2">
+      <div class="flex items-center justify-between text-slate-500">
+        <span class="text-xs font-bold uppercase tracking-wider font-mono {% if txn.txn_last_24h >= 6 %}text-amber-700{% else %}text-slate-600{% endif %}">24h Velocity</span>
+        <div class="w-8 h-8 rounded-lg {% if txn.txn_last_24h >= 6 %}bg-amber-50 text-amber-600{% else %}bg-slate-100 text-slate-700{% endif %} flex items-center justify-center">
+          <span class="material-symbols-outlined text-[18px]">speed</span>
+        </div>
+      </div>
+      <div class="text-2xl font-black font-sans text-slate-900 tracking-tight">
+        {{ txn.txn_last_24h }} <span class="text-xs font-normal text-slate-500 font-mono">attempts</span>
+      </div>
+      <div class="text-xs font-mono text-slate-500 pt-1 border-t border-slate-100 flex items-center justify-between">
+        <span>Window Status</span>
+        <span class="font-bold {% if txn.txn_last_24h >= 6 %}text-amber-700{% else %}text-emerald-700{% endif %}">
+          {{ 'High Velocity Anomaly' if txn.txn_last_24h >= 6 else 'Normal Range' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Hardware Fingerprint -->
+    <div class="bg-white border border-surface-border p-5 rounded-2xl shadow-xs space-y-2">
+      <div class="flex items-center justify-between text-slate-500">
+        <span class="text-xs font-bold uppercase tracking-wider font-mono {% if txn.is_new_device == 1 %}text-rose-700{% else %}text-emerald-700{% endif %}">Device Status</span>
+        <div class="w-8 h-8 rounded-lg {% if txn.is_new_device == 1 %}bg-rose-50 text-rose-600{% else %}bg-emerald-50 text-emerald-600{% endif %} flex items-center justify-center">
+          <span class="material-symbols-outlined text-[18px]">{% if txn.is_new_device == 1 %}mobile_off{% else %}devices{% endif %}</span>
+        </div>
+      </div>
+      <div class="text-2xl font-black font-sans text-slate-900 tracking-tight capitalize">
+        {{ txn.device_type }}
+      </div>
+      <div class="text-xs font-mono text-slate-500 pt-1 border-t border-slate-100 flex items-center justify-between">
+        <span>Hardware Trust</span>
+        <span class="font-bold {% if txn.is_new_device == 1 %}text-rose-600{% else %}text-emerald-700{% endif %}">
+          {{ 'Unrecognized Device' if txn.is_new_device == 1 else 'Trusted Cardholder Device' }}
+        </span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================= MAIN TWO-COLUMN FORENSIC ANALYSIS ================= -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+
+    <!-- LEFT COLUMN: Risk Speedometer Gauge & Explainable AI (6 cols) -->
+    <div class="lg:col-span-6 space-y-6">
+
+      <!-- Speedometer & Verdict Card -->
+      <div class="bg-white border border-surface-border rounded-2xl shadow-xs p-6 text-center space-y-5">
+        <div class="flex items-center justify-between pb-3 border-b border-surface-border">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px] text-brand-600">speed</span>
+            <h2 class="text-sm font-bold text-slate-900">Risk Assessment Gauge</h2>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold">{{ txn.model_version or 'RandomForest-v1' }}</span>
+        </div>
+
+        <!-- Animated Circular Gauge -->
+        <div class="relative w-48 h-48 mx-auto flex items-center justify-center">
+          <svg class="w-full h-full transform -rotate-90" viewBox="0 0 160 160">
+            <!-- Background circle -->
+            <circle cx="80" cy="80" r="68" stroke="#F1F5F9" stroke-width="12" fill="transparent" />
+            <!-- Progress circle -->
+            <circle 
+              cx="80" 
+              cy="80" 
+              r="68" 
+              stroke="{% if score >= 0.70 %}#EF4444{% elif score >= 0.35 %}#F59E0B{% else %}#10B981{% endif %}" 
+              stroke-width="12" 
+              stroke-linecap="round"
+              fill="transparent"
+              stroke-dasharray="427"
+              stroke-dashoffset="{{ 427 - (427 * score) }}"
+              class="transition-all duration-1000 ease-out"
+            />
+          </svg>
+
+          <!-- Gauge Center Text -->
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <span class="text-3xl font-black font-sans tracking-tight text-slate-900">{{ risk_percentage }}%</span>
+            <span class="text-[11px] font-mono uppercase font-bold tracking-wider mt-0.5 {% if score >= 0.5 %}text-rose-600{% else %}text-emerald-600{% endif %}">
+              {{ txn.predicted_class }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Evaluation Summary Banner -->
+        <div class="p-4 rounded-xl border text-xs text-left {% if score >= 0.5 %}bg-rose-50/70 border-rose-200 text-rose-900{% else %}bg-emerald-50/70 border-emerald-200 text-emerald-900{% endif %}">
+          <div class="flex items-center gap-2 font-bold mb-1">
+            <span class="material-symbols-outlined text-[18px]">{% if score >= 0.5 %}gavel{% else %}check_circle{% endif %}</span>
+            <span>Machine Learning Classification: {{ txn.predicted_class | upper }}</span>
+          </div>
+          <p class="text-[11px] opacity-90 leading-relaxed">
+            {% if score >= 0.5 %}
+              Transaction exhibits anomalous behavioral deviations exceeding the operational decision threshold. Quarantined for SOC verification to prevent capital loss.
+            {% else %}
+              Transaction telemetry falls within standard cardholder behavioral baselines with zero anomalous velocity or geolocation signatures.
+            {% endif %}
+          </p>
+        </div>
+      </div>
+
+      <!-- Explainable AI (XAI) Contribution Factors -->
+      <div class="bg-white border border-surface-border rounded-2xl shadow-xs p-6 space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-surface-border">
+          <div>
+            <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <span class="material-symbols-outlined text-[18px] text-brand-600">troubleshoot</span>
+              Explainable AI (XAI) Factor Contributions
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">Instance-level feature impact on the final decision</p>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-brand-50 text-brand-700 font-bold uppercase">Impact</span>
+        </div>
+
+        <div class="space-y-2.5">
+          {% for f in factors %}
+          <div class="p-3 rounded-xl border text-xs flex items-center justify-between {% if f.type == 'risk' %}bg-rose-50/50 border-rose-100{% elif f.type == 'safe' %}bg-emerald-50/50 border-emerald-100{% else %}bg-slate-50 border-slate-100{% endif %}">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 {% if f.type == 'risk' %}bg-rose-100 text-rose-700{% elif f.type == 'safe' %}bg-emerald-100 text-emerald-700{% else %}bg-slate-200 text-slate-700{% endif %}">
+                <span class="material-symbols-outlined text-[18px]">{{ f.icon }}</span>
+              </div>
+              <div>
+                <div class="font-bold text-slate-900">{{ f.name }}</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">{{ f.desc }}</div>
+              </div>
+            </div>
+            <span class="font-mono text-xs font-bold shrink-0 ml-3 {% if f.type == 'risk' %}text-rose-600{% elif f.type == 'safe' %}text-emerald-600{% else %}text-slate-600{% endif %}">
+              {{ f.impact }}
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: Charts, 7-Feature Vector Matrix & Linked Case History (6 cols) -->
+    <div class="lg:col-span-6 space-y-6">
+
+      <!-- Feature Vector Attributes Matrix -->
+      <div class="bg-white border border-surface-border rounded-2xl shadow-xs p-6 space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-surface-border">
+          <div>
+            <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <span class="material-symbols-outlined text-[18px] text-brand-600">dataset</span>
+              7-Feature Contextual Vector Matrix
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">Raw ingested transaction behavioral parameters</p>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold uppercase">Audit Record</span>
+        </div>
+
+        <div class="divide-y divide-slate-100 text-xs font-mono">
+          <div class="py-2.5 flex items-center justify-between">
+            <span class="text-slate-500 font-sans">Transaction Identifier</span>
+            <span class="font-bold text-slate-900">#TXN-{{ txn.transaction_id }}</span>
+          </div>
+          <div class="py-2.5 flex items-center justify-between">
+            <span class="text-slate-500 font-sans">Monetary Amount</span>
+            <span class="font-bold text-slate-900">PKR {{ "{:,.2f}".format(txn.amount) }}</span>
+          </div>
+          <div class="py-2.5 flex items-center justify-between">
+            <span class="text-slate-500 font-sans">Diurnal Hour of Processing</span>
+            <span class="font-bold text-slate-900">{{ "%02d:00 UTC"|format(txn.hour) }}</span>
+          </div>
+          <div class="py-2.5 flex items-center justify-between">
+            <span class="text-slate-500 font-sans">Origin Geolocation</span>
+            <span class="font-bold text-slate-900 capitalize">{{ txn.location }}</span>
+          </div>
+          <div class="py-2.5 flex items-center justify-between">
+            <span class="text-slate-500 font-sans">Payment Instrument</span>
+            <span class="font-bold text-slate-900 capitalize">{{ txn.payment_method.replace('_', ' ') }}</span>
+          </div>
+          <div class="py-2.5 flex items-center justify-between">
+            <span class="text-slate-500 font-sans">Hardware Factor</span>
+            <span class="font-bold text-slate-900 capitalize">{{ txn.device_type }}</span>
+          </div>
+          <div class="py-2.5 flex items-center justify-between">
+            <span class="text-slate-500 font-sans">24-Hour Velocity Spike</span>
+            <span class="font-bold text-slate-900">{{ txn.txn_last_24h }} transaction attempts</span>
+          </div>
+          <div class="py-2.5 flex items-center justify-between">
+            <span class="text-slate-500 font-sans">Hardware Authenticity Flag</span>
+            <span class="font-bold {% if txn.is_new_device == 1 %}text-rose-600{% else %}text-emerald-600{% endif %}">
+              {{ '1 (Unrecognized New Hardware)' if txn.is_new_device == 1 else '0 (Recognized Cardholder)' }}
+            </span>
+          </div>
+          <div class="py-2.5 flex items-center justify-between">
+            <span class="text-slate-500 font-sans">Timestamp Ingested</span>
+            <span class="text-slate-600">{{ txn.created_at[:19].replace('T', ' ') if txn.created_at else 'Real-time' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Linked Security Alerts & Incident History -->
+      <div class="bg-white border border-surface-border rounded-2xl shadow-xs p-6 space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-surface-border">
+          <div>
+            <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <span class="material-symbols-outlined text-[18px] text-rose-600">crisis_alert</span>
+              Linked Security Alerts &amp; Case Notes
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">Incident queue events associated with this transaction</p>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-50 text-rose-700 font-bold uppercase">{{ alerts|length }} Incident(s)</span>
+        </div>
+
+        {% if alerts %}
+          <div class="space-y-3">
+            {% for a in alerts %}
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3 text-xs">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="font-mono font-bold text-slate-900">#ALT-{{ a.alert_id }}</span>
+                  <span class="px-2 py-0.5 rounded-full font-mono text-[10px] font-bold {% if a.status == 'CONFIRMED_FRAUD' %}bg-slate-900 text-white{% elif a.status == 'FALSE_POSITIVE' %}bg-emerald-100 text-emerald-800{% elif a.status == 'UNDER_REVIEW' %}bg-amber-100 text-amber-800{% else %}bg-rose-100 text-rose-800{% endif %}">
+                    {{ a.status or 'NEW' }}
+                  </span>
+                </div>
+                <span class="text-[11px] font-mono text-slate-400">{{ a.created_at[:19].replace('T', ' ') if a.created_at else 'Live' }}</span>
+              </div>
+
+              <p class="text-slate-700 text-xs">{{ a.message }}</p>
+
+              {% if a.notes %}
+              <div class="p-2.5 bg-white border border-slate-200 rounded-lg text-[11px] text-slate-600 space-y-1">
+                <div class="font-bold text-slate-800 flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px] text-brand-600">comment</span>
+                  <span>Analyst Forensic Note (by {{ a.resolved_by or 'Analyst' }}):</span>
+                </div>
+                <p>{{ a.notes }}</p>
+              </div>
+              {% endif %}
+
+              <!-- Quick Triage Action for this alert -->
+              <div class="pt-2 border-t border-slate-200 flex items-center justify-between text-xs">
+                <a href="{{ url_for('alerts') }}" class="text-brand-600 hover:text-brand-800 font-semibold flex items-center gap-1 font-mono text-[11px]">
+                  <span>Open Full Incident Queue</span>
+                  <span class="material-symbols-outlined text-[13px]">arrow_forward</span>
+                </a>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="p-6 text-center space-y-2 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+            <span class="material-symbols-outlined text-[24px] text-emerald-600">verified</span>
+            <div class="text-xs font-bold text-slate-800">No Security Incidents Raised</div>
+            <p class="text-[11px] text-slate-500">This transaction was classified as legitimate and did not trigger any automated alerts.</p>
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

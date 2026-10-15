@@ -1,0 +1,724 @@
+{% extends "base.html" %}
+{% block title %}Simulated Real-Time Monitoring — Live Telemetry{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- ================= TOP HEADER & DISCLAIMER ================= -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-surface-border">
+    <div class="text-left">
+      <div class="flex items-center gap-2">
+        <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">Simulated Real-Time Monitoring</h1>
+        <span class="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1.5" id="liveStatusBadge">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>READY</span>
+        </span>
+      </div>
+      <p class="text-xs sm:text-sm text-slate-500 mt-1">Continuous simulated transaction pipeline scored synchronously against the active Random Forest model.</p>
+    </div>
+
+    <!-- Security / Simulation Notice -->
+    <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200 text-xs font-mono text-slate-600">
+      <span class="material-symbols-outlined text-[16px] text-brand-600">science</span>
+      <span>Synthetic Test Stream • Real Model Inference</span>
+    </div>
+  </div>
+
+  <!-- ================= CONTROL DECK CARD ================= -->
+  <div class="bg-white border border-surface-border rounded-2xl p-5 shadow-sm space-y-4 text-left">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Primary Action Buttons -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <!-- Start Button -->
+        <button 
+          type="button" 
+          id="btnStart" 
+          onclick="startSimulation()" 
+          class="bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-2 transition"
+        >
+          <span class="material-symbols-outlined text-[18px]">play_arrow</span>
+          <span>Start Stream</span>
+        </button>
+
+        <!-- Pause Button -->
+        <button 
+          type="button" 
+          id="btnPause" 
+          onclick="pauseSimulation()" 
+          disabled 
+          class="bg-slate-100 text-slate-400 font-semibold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 transition cursor-not-allowed"
+        >
+          <span class="material-symbols-outlined text-[18px]">pause</span>
+          <span>Pause</span>
+        </button>
+
+        <!-- Stop / Clear Button -->
+        <button 
+          type="button" 
+          id="btnStop" 
+          onclick="stopSimulation()" 
+          disabled 
+          class="bg-slate-100 text-slate-400 font-semibold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 transition cursor-not-allowed"
+        >
+          <span class="material-symbols-outlined text-[18px]">stop</span>
+          <span>Reset Feed</span>
+        </button>
+
+        <!-- Inject Attack Burst -->
+        <button 
+          type="button" 
+          onclick="injectAttackBurst()" 
+          class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold text-xs px-3.5 py-2.5 rounded-xl shadow-sm flex items-center gap-1.5 transition ml-2" 
+          title="Force an intentional 3 AM foreign high-amount attack to demonstrate immediate detection to examiners"
+        >
+          <span class="material-symbols-outlined text-[18px]">bolt</span>
+          <span>Inject Attack Burst</span>
+        </button>
+      </div>
+
+      <!-- Stream Controls & Speed Selector -->
+      <div class="flex flex-wrap items-center gap-4 text-xs font-mono">
+        <!-- Speed Setting -->
+        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
+          <span class="text-slate-500 font-semibold">Speed:</span>
+          <select id="speedSelect" onchange="updateSpeed(this.value)" class="bg-transparent border-0 text-xs font-bold text-slate-800 p-0 focus:ring-0 cursor-pointer">
+            <option value="1800">Normal (1.8s)</option>
+            <option value="1000" selected>Fast (1.0s)</option>
+            <option value="500">Turbo (0.5s)</option>
+          </select>
+        </div>
+
+        <!-- Audio Alert Toggle -->
+        <label class="flex items-center gap-1.5 cursor-pointer text-slate-600 select-none">
+          <input type="checkbox" id="audioToggle" checked class="w-3.5 h-3.5 rounded text-brand-600 border-slate-300 focus:ring-brand-500" />
+          <span>Audio Pings</span>
+        </label>
+
+        <!-- Auto-scroll Toggle -->
+        <label class="flex items-center gap-1.5 cursor-pointer text-slate-600 select-none">
+          <input type="checkbox" id="autoscrollToggle" checked class="w-3.5 h-3.5 rounded text-brand-600 border-slate-300 focus:ring-brand-500" />
+          <span>Lock Top</span>
+        </label>
+      </div>
+
+    </div>
+
+    <!-- Live Counters Row -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-100">
+      
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+        <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 block font-bold">Simulated Events</span>
+        <span class="text-xl font-black text-slate-900 font-sans" id="counterTotal">0</span>
+      </div>
+
+      <div class="bg-emerald-50/50 p-3 rounded-xl border border-emerald-200">
+        <span class="text-[10px] font-mono uppercase tracking-wider text-emerald-700 block font-bold">Approved Safe</span>
+        <span class="text-xl font-black text-emerald-600 font-sans" id="counterLegit">0</span>
+      </div>
+
+      <div class="bg-rose-50/50 p-3 rounded-xl border border-rose-200">
+        <span class="text-[10px] font-mono uppercase tracking-wider text-rose-700 block font-bold">Intercepted Threats</span>
+        <span class="text-xl font-black text-rose-600 font-sans" id="counterFraud">0</span>
+      </div>
+
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+        <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 block font-bold">Threat Ratio</span>
+        <span class="text-xl font-black text-slate-800 font-sans" id="counterRate">0.0%</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= STREAM & REAL-TIME RADAR ROW ================= -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    
+    <!-- Left Column: Live Telemetry Event Stream (8 cols) -->
+    <div class="lg:col-span-8 bg-white border border-surface-border rounded-2xl shadow-sm overflow-hidden text-left flex flex-col h-[560px]">
+      
+      <div class="p-4 border-b border-surface-border flex items-center justify-between bg-slate-50/60">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-[18px] text-brand-600 animate-spin" id="feedSpinner" style="animation-duration: 3s; display: none;">sync</span>
+          <span class="text-xs font-mono font-bold uppercase tracking-wider text-slate-900">Real-Time Transaction Stream</span>
+        </div>
+        <span class="text-[11px] font-mono text-slate-400" id="streamSpeedLabel">Throughput: 60 tx/min</span>
+      </div>
+
+      <!-- Scrollable Event Stream Container -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-2.5" id="streamContainer">
+        <!-- Placeholder Empty State -->
+        <div id="streamEmptyState" class="h-full flex flex-col items-center justify-center text-center p-8 text-slate-400 space-y-2">
+          <div class="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mx-auto">
+            <span class="material-symbols-outlined text-[28px]">sensors</span>
+          </div>
+          <p class="text-xs font-mono text-slate-600 font-semibold">Simulation stream is currently standby.</p>
+          <p class="text-[11px] text-slate-400 max-w-xs">Click <strong>"Start Stream"</strong> or <strong>"Inject Attack Burst"</strong> to initiate real-time ML pipeline scoring.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Live Risk Radar & Trajectory Chart (4 cols) -->
+    <div class="lg:col-span-4 space-y-4">
+      
+      <!-- Latest Scored Transaction Card -->
+      <div class="bg-white border border-surface-border rounded-2xl p-5 shadow-sm text-left space-y-3">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+          <span class="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">Latest Intercept</span>
+          <span class="text-xs font-mono font-bold text-slate-900" id="latestTxnId">—</span>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <div>
+            <div class="text-2xl font-black font-sans text-slate-900" id="latestAmount">PKR 0.00</div>
+            <div class="text-[11px] font-mono text-slate-400 capitalize" id="latestMeta">Awaiting next vector</div>
+          </div>
+          
+          <div class="text-right">
+            <div class="text-xl font-mono font-extrabold text-slate-900" id="latestScore">0.0%</div>
+            <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600 uppercase" id="latestVerdict">STANDBY</span>
+          </div>
+        </div>
+
+        <!-- Risk Progress Bar -->
+        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+          <div id="latestProgressBar" class="h-2 rounded-full transition-all duration-300 bg-slate-300" style="width: 0%"></div>
+        </div>
+
+        <!-- Explain Latest Decision Button -->
+        <button 
+          type="button" 
+          id="btnExplainLatest" 
+          onclick="inspectLatestTxn()" 
+          disabled
+          class="w-full py-2 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-xs rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          title="Explain the risk factors for this latest transaction"
+        >
+          <span class="material-symbols-outlined text-[16px] text-brand-600">psychology</span>
+          <span id="btnExplainLatestText">Explain Decision</span>
+        </button>
+      </div>
+
+      <!-- Rolling Trajectory Chart -->
+      <div class="bg-white border border-surface-border rounded-2xl p-5 shadow-sm text-left space-y-3">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+          <div class="flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px] text-brand-600">show_chart</span>
+            <span class="text-xs font-mono font-bold uppercase tracking-wider text-slate-900">Risk Trajectory</span>
+          </div>
+          <span class="text-[10px] font-mono text-slate-400">Last 15 Txns</span>
+        </div>
+
+        <div class="relative w-full h-44">
+          <canvas id="trajectoryChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Intercepted Critical Threats Feed (Mini Triage) -->
+      <div class="bg-white border border-surface-border rounded-2xl p-4 shadow-sm text-left space-y-2.5">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+          <div class="flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px] text-rose-600">crisis_alert</span>
+            <span class="text-xs font-mono font-bold uppercase tracking-wider text-rose-700">Intercepted Attacks</span>
+          </div>
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 font-bold" id="interceptBadge">0 Flags</span>
+        </div>
+
+        <div id="interceptList" class="space-y-1.5 max-h-48 overflow-y-auto text-xs font-mono">
+          <div class="p-2 text-center text-slate-400 text-[11px]">No critical fraud intercepted yet.</div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ================= ON-PAGE EXPLAINABLE AI (XAI) FORENSIC MODAL ================= -->
+<div id="simulatedXaiModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+  <div class="bg-white border border-surface-border rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-4 text-left relative transform transition-all max-h-[90vh] overflow-y-auto">
+    
+    <!-- Modal Header -->
+    <div class="flex items-center justify-between pb-3 border-b border-surface-border">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-bold" id="xaiModalIconBox">
+          <span class="material-symbols-outlined text-[22px]">psychology</span>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="text-base font-bold text-slate-900" id="xaiModalTitle">Transaction Risk Analysis</h3>
+            <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded" id="xaiModalBadge">FRAUD</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-0.5" id="xaiModalSubtitle">Instance-level Explainable AI feature factors</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeSimulatedXaiModal()" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg cursor-pointer">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <!-- Probability & Classification Summary Card -->
+    <div class="p-3.5 rounded-xl border flex items-center justify-between" id="xaiModalVerdictBanner">
+      <div class="space-y-0.5">
+        <span class="text-[10px] font-mono uppercase font-bold text-slate-500 block">Decision Verdict</span>
+        <div class="text-sm font-bold text-slate-900 flex items-center gap-1.5" id="xaiModalVerdictText">
+          CRITICAL FRAUD
+        </div>
+      </div>
+      <div class="text-right">
+        <span class="text-[10px] font-mono uppercase font-bold text-slate-500 block">ML Probability</span>
+        <div class="text-xl font-black font-mono" id="xaiModalScoreText">100.0%</div>
+      </div>
+    </div>
+
+    <!-- XAI Feature Contributing Factors Section -->
+    <div class="space-y-2">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-mono font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[15px] text-brand-600">troubleshoot</span>
+          <span>Why The Model Flagged This Transaction:</span>
+        </span>
+        <span class="text-[10px] font-mono text-slate-400 uppercase font-semibold">Factor Impact</span>
+      </div>
+      <div id="xaiModalFactorsContainer" class="space-y-2">
+        <!-- Dynamically generated factor cards -->
+      </div>
+    </div>
+
+    <!-- Evaluated 7-Feature Vector Parameters -->
+    <div class="pt-2 border-t border-slate-100 space-y-2">
+      <span class="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400 block">Evaluated Feature Vector Parameters:</span>
+      <div class="grid grid-cols-2 gap-2 text-xs font-mono" id="xaiModalVectorGrid">
+        <!-- Dynamically filled: Amount, Hour, Location, Device, Payment, Velocity, Hardware -->
+      </div>
+    </div>
+
+    <!-- Modal Footer Actions -->
+    <div class="pt-3 border-t border-surface-border flex items-center justify-between gap-3">
+      <a 
+        id="xaiModalFullDossierBtn" 
+        href="#" 
+        target="_blank" 
+        class="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+        title="Open full dedicated forensic dossier in new tab"
+      >
+        <span>Open Dedicated Dossier</span>
+        <span class="material-symbols-outlined text-[15px]">open_in_new</span>
+      </a>
+
+      <button 
+        type="button" 
+        onclick="closeSimulatedXaiModal()" 
+        class="px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl border border-slate-300 transition cursor-pointer"
+      >
+        Dismiss
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= REAL-TIME SIMULATOR JAVASCRIPT ENGINE ================= -->
+<script>
+  let isRunning = false;
+  let intervalTimer = null;
+  let streamInterval = 1000;
+  let countTotal = 0;
+  let countLegit = 0;
+  let countFraud = 0;
+  let trajectoryChart = null;
+  const simulatedCache = new Map();
+  let currentLatestTxnId = null;
+
+  // Initialize Rolling Chart
+  document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('trajectoryChart');
+    if (ctx) {
+      trajectoryChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: Array.from({length: 15}, () => ''),
+          datasets: [{
+            label: 'Risk Score %',
+            data: Array(15).fill(0),
+            borderColor: '#2563EB',
+            backgroundColor: 'rgba(37, 99, 235, 0.08)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { display: false },
+            y: { min: 0, max: 100, ticks: { font: { family: 'JetBrains Mono', size: 9 } } }
+          }
+        }
+      });
+    }
+  });
+
+  function updateSpeed(val) {
+    streamInterval = parseInt(val, 10);
+    const speedLabel = document.getElementById('streamSpeedLabel');
+    if (speedLabel) {
+      speedLabel.textContent = `Throughput: ${Math.round(60000 / streamInterval)} tx/min`;
+    }
+    if (isRunning) {
+      clearInterval(intervalTimer);
+      intervalTimer = setInterval(() => fetchNextTransaction(false), streamInterval);
+    }
+  }
+
+  function startSimulation() {
+    if (isRunning) return;
+    isRunning = true;
+
+    document.getElementById('btnStart').classList.add('bg-emerald-600');
+    document.getElementById('btnStart').innerHTML = '<span class="material-symbols-outlined text-[18px]">autorenew</span><span>Streaming...</span>';
+    document.getElementById('btnPause').disabled = false;
+    document.getElementById('btnPause').classList.remove('cursor-not-allowed', 'text-slate-400');
+    document.getElementById('btnPause').classList.add('bg-white', 'text-slate-700', 'border', 'border-surface-border', 'hover:bg-slate-50');
+    document.getElementById('btnStop').disabled = false;
+    document.getElementById('btnStop').classList.remove('cursor-not-allowed', 'text-slate-400');
+    document.getElementById('btnStop').classList.add('bg-white', 'text-rose-600', 'border', 'border-surface-border', 'hover:bg-rose-50');
+
+    document.getElementById('liveStatusBadge').className = 'text-xs font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1.5';
+    document.getElementById('liveStatusBadge').innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span><span>STREAMING</span>';
+    document.getElementById('feedSpinner').style.display = 'inline-block';
+
+    // Clear empty placeholder
+    const emptyState = document.getElementById('streamEmptyState');
+    if (emptyState) emptyState.remove();
+
+    fetchNextTransaction(false);
+    intervalTimer = setInterval(() => fetchNextTransaction(false), streamInterval);
+  }
+
+  function pauseSimulation() {
+    if (!isRunning) return;
+    isRunning = false;
+    clearInterval(intervalTimer);
+
+    document.getElementById('btnStart').innerHTML = '<span class="material-symbols-outlined text-[18px]">play_arrow</span><span>Resume Stream</span>';
+    document.getElementById('liveStatusBadge').className = 'text-xs font-mono font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full flex items-center gap-1.5';
+    document.getElementById('liveStatusBadge').innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500"></span><span>PAUSED</span>';
+    document.getElementById('feedSpinner').style.display = 'none';
+  }
+
+  function stopSimulation() {
+    pauseSimulation();
+    document.getElementById('streamContainer').innerHTML = `
+      <div id="streamEmptyState" class="h-full flex flex-col items-center justify-center text-center p-8 text-slate-400 space-y-2">
+        <div class="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mx-auto">
+          <span class="material-symbols-outlined text-[28px]">sensors</span>
+        </div>
+        <p class="text-xs font-mono text-slate-600 font-semibold">Feed reset.</p>
+        <p class="text-[11px] text-slate-400 max-w-xs">Click <strong>"Start Stream"</strong> to restart real-time scoring.</p>
+      </div>
+    `;
+    document.getElementById('interceptList').innerHTML = '<div class="p-2 text-center text-slate-400 text-[11px]">No critical fraud intercepted yet.</div>';
+    document.getElementById('interceptBadge').textContent = '0 Flags';
+    document.getElementById('btnPause').disabled = true;
+    document.getElementById('btnStop').disabled = true;
+  }
+
+  function injectAttackBurst() {
+    if (!isRunning) {
+      startSimulation();
+    }
+    // Fire immediate intentional high-risk attack
+    fetchNextTransaction(true);
+  }
+
+  function playAlertSound() {
+    const toggle = document.getElementById('audioToggle');
+    if (!toggle || !toggle.checked) return;
+
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime); // High alert pitch
+      osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.15);
+    } catch (e) {
+      // AudioContext restricted before user gesture
+    }
+  }
+
+  function fetchNextTransaction(burst = false) {
+    fetch("{{ url_for('simulate_next') }}", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ burst_attack: burst })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'success') {
+        renderEvent(data);
+      }
+    })
+    .catch(err => console.error("Simulate fetch error:", err));
+  }
+
+  function renderEvent(item) {
+    countTotal++;
+    simulatedCache.set(Number(item.txn_id), item);
+    currentLatestTxnId = item.txn_id;
+
+    if (item.predicted === 'Fraud') {
+      countFraud++;
+      playAlertSound();
+    } else {
+      countLegit++;
+    }
+
+    // Update Counters
+    document.getElementById('counterTotal').textContent = countTotal;
+    document.getElementById('counterLegit').textContent = countLegit;
+    document.getElementById('counterFraud').textContent = countFraud;
+    const rate = ((countFraud / countTotal) * 100).toFixed(1);
+    document.getElementById('counterRate').textContent = `${rate}%`;
+
+    // Update Latest Scored Card
+    document.getElementById('latestTxnId').textContent = `#TXN-${item.txn_id}`;
+    document.getElementById('latestAmount').textContent = `PKR ${item.txn.amount.toFixed(2)}`;
+    document.getElementById('latestMeta').textContent = `${item.txn.location} • ${item.txn.payment_method.replace('_', ' ')} • ${String(item.txn.hour).padStart(2, '0')}:00`;
+    document.getElementById('latestScore').textContent = `${item.risk_percentage}%`;
+
+    const verdictEl = document.getElementById('latestVerdict');
+    const progressEl = document.getElementById('latestProgressBar');
+    progressEl.style.width = `${item.risk_percentage}%`;
+
+    // Update Explain Button on Latest Card
+    const btnExplain = document.getElementById('btnExplainLatest');
+    const btnExplainText = document.getElementById('btnExplainLatestText');
+    if (btnExplain && btnExplainText) {
+      btnExplain.disabled = false;
+      if (item.predicted === 'Fraud') {
+        btnExplain.className = 'w-full py-2 px-3 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-semibold text-xs rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs';
+        btnExplainText.textContent = 'Why Was This Flagged as Fraud?';
+      } else {
+        btnExplain.className = 'w-full py-2 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-xs rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer';
+        btnExplainText.textContent = 'Explain Legitimate Factors';
+      }
+    }
+
+    if (item.predicted === 'Fraud') {
+      verdictEl.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200';
+      verdictEl.textContent = 'CRITICAL FRAUD';
+      progressEl.className = 'h-2 rounded-full transition-all duration-300 bg-rose-500';
+      
+      // Add to intercept mini-list
+      const list = document.getElementById('interceptList');
+      if (countFraud === 1) list.innerHTML = '';
+      const interceptHtml = `
+        <div onclick="inspectSimulatedTxn(${item.txn_id})" class="flex items-center justify-between p-2 rounded-lg bg-rose-50/70 hover:bg-rose-100/90 border border-rose-200/80 cursor-pointer transition group" title="Click to view why this transaction was considered fraud">
+          <div class="flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
+            <span class="font-bold text-slate-900 group-hover:text-rose-700">#TXN-${item.txn_id}</span>
+            <span class="text-slate-500">PKR ${item.txn.amount.toFixed(2)}</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="font-bold text-rose-700">${item.risk_percentage}%</span>
+            <span class="material-symbols-outlined text-[14px] text-rose-500">psychology</span>
+          </div>
+        </div>
+      `;
+      list.insertAdjacentHTML('afterbegin', interceptHtml);
+      document.getElementById('interceptBadge').textContent = `${countFraud} Flags`;
+
+    } else {
+      verdictEl.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200';
+      verdictEl.textContent = 'APPROVED';
+      progressEl.className = 'h-2 rounded-full transition-all duration-300 bg-emerald-500';
+    }
+
+    // Update Rolling Chart
+    if (trajectoryChart) {
+      const data = trajectoryChart.data.datasets[0].data;
+      data.shift();
+      data.push(item.risk_percentage);
+      trajectoryChart.data.datasets[0].borderColor = (item.predicted === 'Fraud') ? '#EF4444' : '#2563EB';
+      trajectoryChart.update('none');
+    }
+
+    // Prepend Row into Live Stream Feed
+    const container = document.getElementById('streamContainer');
+    const isFraud = item.predicted === 'Fraud';
+    
+    const row = document.createElement('div');
+    row.className = `p-3 rounded-xl border transition-all duration-300 flex items-center justify-between text-xs ${
+      isFraud ? 'bg-rose-50/60 border-rose-200 shadow-sm' : 'bg-slate-50/60 border-slate-200/80 hover:bg-slate-50'
+    }`;
+    
+    row.innerHTML = `
+      <div class="flex items-center gap-3 min-w-0">
+        <span class="font-mono text-slate-400 text-[11px] shrink-0">${item.time}</span>
+        <div class="w-7 h-7 rounded-lg ${isFraud ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'} flex items-center justify-center font-bold text-xs shrink-0">
+          <span class="material-symbols-outlined text-[15px]">${isFraud ? 'crisis_alert' : 'check'}</span>
+        </div>
+        <div class="flex flex-col min-w-0 text-left">
+          <div class="flex items-center gap-2">
+            <a href="/transaction/${item.txn_id}" target="_blank" class="font-mono font-bold text-brand-600 hover:text-brand-800 hover:underline flex items-center gap-0.5" title="Open Forensic Dossier in new tab">
+              <span>#TXN-${item.txn_id}</span>
+              <span class="material-symbols-outlined text-[11px]">open_in_new</span>
+            </a>
+            <span class="font-mono font-black text-slate-900">PKR ${item.txn.amount.toFixed(2)}</span>
+            <span class="text-[10px] font-mono capitalize px-1.5 py-0.2 bg-white rounded border border-slate-200">${item.txn.location}</span>
+          </div>
+          <span class="text-[11px] text-slate-500 font-mono mt-0.5 truncate">
+            ${item.txn.payment_method.replace('_', ' ')} • ${String(item.txn.hour).padStart(2, '0')}:00 • 24h Vel: ${item.txn.txn_last_24h} ${item.txn.is_new_device ? '• (New Device)' : ''}
+          </span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0 ml-3">
+        <span class="font-mono font-bold text-xs ${isFraud ? 'text-rose-600' : 'text-emerald-600'}">
+          ${item.risk_percentage}%
+        </span>
+        <span class="font-mono text-[10px] font-bold px-2 py-0.5 rounded-full ${isFraud ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">
+          ${isFraud ? 'FRAUD' : 'PASS'}
+        </span>
+        <button 
+          type="button" 
+          onclick="inspectSimulatedTxn(${item.txn_id})" 
+          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold ${isFraud ? 'bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300 shadow-xs' : 'bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 shadow-xs'} transition cursor-pointer"
+          title="${isFraud ? 'Click to inspect why this transaction was considered fraud' : 'Click to inspect ML decision factors'}"
+        >
+          <span class="material-symbols-outlined text-[14px]">${isFraud ? 'psychology' : 'info'}</span>
+          <span>${isFraud ? 'Why Fraud?' : 'Factors'}</span>
+        </button>
+      </div>
+    `;
+
+    container.insertBefore(row, container.firstChild);
+
+    // Limit visible DOM elements to 35 rows to keep memory ultralight
+    if (container.children.length > 35) {
+      container.removeChild(container.lastChild);
+    }
+
+    // Auto-scroll lock
+    const autoscroll = document.getElementById('autoscrollToggle');
+    if (autoscroll && autoscroll.checked) {
+      container.scrollTop = 0;
+    }
+  }
+
+  function inspectSimulatedTxn(txnId) {
+    const item = simulatedCache.get(Number(txnId)) || simulatedCache.get(String(txnId));
+    if (!item) {
+      window.open('/transaction/' + txnId, '_blank');
+      return;
+    }
+
+    const isFraud = item.predicted === 'Fraud';
+    document.getElementById('xaiModalTitle').textContent = `Transaction #TXN-${item.txn_id}`;
+    document.getElementById('xaiModalSubtitle').textContent = `${item.time} • PKR ${item.txn.amount.toFixed(2)} • ${item.txn.location} • ${item.txn.payment_method.replace('_', ' ')}`;
+    document.getElementById('xaiModalScoreText').textContent = `${item.risk_percentage}%`;
+    document.getElementById('xaiModalFullDossierBtn').href = `/transaction/${item.txn_id}`;
+
+    const badge = document.getElementById('xaiModalBadge');
+    const banner = document.getElementById('xaiModalVerdictBanner');
+    const verdictText = document.getElementById('xaiModalVerdictText');
+    const iconBox = document.getElementById('xaiModalIconBox');
+
+    if (isFraud) {
+      badge.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200';
+      badge.textContent = 'CRITICAL FRAUD';
+      banner.className = 'p-3.5 rounded-xl border flex items-center justify-between bg-rose-50 border-rose-200 text-rose-800';
+      verdictText.innerHTML = '<span class="material-symbols-outlined text-[18px] text-rose-600">warning</span><span>FLAGGED FRAUDULENT (HIGH RISK)</span>';
+      iconBox.className = 'w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold';
+    } else {
+      badge.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200';
+      badge.textContent = 'APPROVED';
+      banner.className = 'p-3.5 rounded-xl border flex items-center justify-between bg-emerald-50 border-emerald-200 text-emerald-800';
+      verdictText.innerHTML = '<span class="material-symbols-outlined text-[18px] text-emerald-600">verified</span><span>APPROVED LEGITIMATE (LOW RISK)</span>';
+      iconBox.className = 'w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold';
+    }
+
+    // Render Factors
+    const factorsContainer = document.getElementById('xaiModalFactorsContainer');
+    if (item.factors && item.factors.length > 0) {
+      let factorsHtml = '';
+      item.factors.forEach(f => {
+        const isRisk = f.type === 'risk';
+        const isSafe = f.type === 'safe';
+        factorsHtml += `
+          <div class="p-3 rounded-xl border text-xs flex items-center justify-between ${isRisk ? 'bg-rose-50/60 border-rose-100' : (isSafe ? 'bg-emerald-50/60 border-emerald-100' : 'bg-slate-50 border-slate-100')}">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isRisk ? 'bg-rose-100 text-rose-700' : (isSafe ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700')}">
+                <span class="material-symbols-outlined text-[16px]">${f.icon}</span>
+              </div>
+              <div>
+                <div class="font-bold text-slate-900">${f.name}</div>
+                <div class="text-[11px] text-slate-500 mt-0.5">${f.desc}</div>
+              </div>
+            </div>
+            <span class="font-mono text-xs font-bold shrink-0 ml-3 ${isRisk ? 'text-rose-600' : (isSafe ? 'text-emerald-600' : 'text-slate-600')}">
+              ${f.impact}
+            </span>
+          </div>
+        `;
+      });
+      factorsContainer.innerHTML = factorsHtml;
+    } else {
+      factorsContainer.innerHTML = '<div class="p-2 text-xs text-slate-400">No anomalous factors detected.</div>';
+    }
+
+    // Render Vector Matrix Grid
+    const grid = document.getElementById('xaiModalVectorGrid');
+    grid.innerHTML = `
+      <div class="bg-slate-50 p-2 rounded-lg border border-slate-200/80">
+        <span class="text-slate-400 text-[10px] block">Amount</span>
+        <span class="font-bold text-slate-900">PKR ${item.txn.amount.toFixed(2)}</span>
+      </div>
+      <div class="bg-slate-50 p-2 rounded-lg border border-slate-200/80">
+        <span class="text-slate-400 text-[10px] block">Hour of Day</span>
+        <span class="font-bold text-slate-900">${String(item.txn.hour).padStart(2, '0')}:00 UTC</span>
+      </div>
+      <div class="bg-slate-50 p-2 rounded-lg border border-slate-200/80">
+        <span class="text-slate-400 text-[10px] block">Geolocation</span>
+        <span class="font-bold text-slate-900 capitalize">${item.txn.location}</span>
+      </div>
+      <div class="bg-slate-50 p-2 rounded-lg border border-slate-200/80">
+        <span class="text-slate-400 text-[10px] block">Payment Instrument</span>
+        <span class="font-bold text-slate-900 capitalize">${item.txn.payment_method.replace('_', ' ')}</span>
+      </div>
+      <div class="bg-slate-50 p-2 rounded-lg border border-slate-200/80">
+        <span class="text-slate-400 text-[10px] block">24h Velocity</span>
+        <span class="font-bold text-slate-900">${item.txn.txn_last_24h} attempts</span>
+      </div>
+      <div class="bg-slate-50 p-2 rounded-lg border border-slate-200/80">
+        <span class="text-slate-400 text-[10px] block">Hardware Fingerprint</span>
+        <span class="font-bold ${item.txn.is_new_device ? 'text-rose-600' : 'text-slate-900'}">${item.txn.device_type} (${item.txn.is_new_device ? 'New Hardware' : 'Trusted'})</span>
+      </div>
+    `;
+
+    document.getElementById('simulatedXaiModal').classList.remove('hidden');
+  }
+
+  function closeSimulatedXaiModal() {
+    document.getElementById('simulatedXaiModal').classList.add('hidden');
+  }
+
+  function inspectLatestTxn() {
+    if (currentLatestTxnId) {
+      inspectSimulatedTxn(currentLatestTxnId);
+    }
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,37 @@
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment Variables & Local Secrets
+.env
+.env.local
+
+# IDE & Editor Configs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Dynamic Matplotlib chart cache
+static/charts/*.png
+!static/charts/.gitkeep
+
+# Logs & Temporary Files
+*.log

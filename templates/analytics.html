@@ -1,0 +1,460 @@
+{% extends "base.html" %}
+
+{% block title %}Deep-Dive Fraud Analytics & Threat Intelligence — FraudGuard AI{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-7xl mx-auto">
+
+  <!-- ================= TOP HEADER & AUDIT EXPORT BAR ================= -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-surface-border">
+    <div>
+      <div class="flex items-center gap-2">
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Threat Analytics & Portfolio Intelligence</h1>
+        <span class="text-xs font-mono font-semibold text-brand-700 bg-brand-50 border border-brand-200 px-2.5 py-0.5 rounded-full">Telemetry Audit</span>
+      </div>
+      <p class="text-xs text-slate-500 mt-0.5">Multidimensional risk correlation, channel vulnerability profiling, and capital exposure metrics.</p>
+    </div>
+
+    <!-- Actions: Print Briefing & Download CSV -->
+    <div class="flex items-center gap-2.5 print:hidden">
+      <button 
+        type="button" 
+        onclick="window.print()" 
+        class="bg-white hover:bg-slate-50 border border-surface-border text-slate-700 font-semibold text-xs px-3.5 py-2 rounded-xl shadow-xs flex items-center gap-1.5 transition"
+      >
+        <span class="material-symbols-outlined text-[16px] text-slate-500">print</span>
+        <span>Print Briefing</span>
+      </button>
+
+      <a 
+        href="{{ url_for('report_csv') }}" 
+        class="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs px-3.5 py-2 rounded-xl shadow-xs flex items-center gap-1.5 transition"
+      >
+        <span class="material-symbols-outlined text-[16px]">file_download</span>
+        <span>Export CSV Audit</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ================= 4 KEY RISK PERFORMANCE INDICATORS (KRPI) ================= -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    
+    <!-- KRPI 1: Threat Detection Ratio -->
+    <div class="bg-white border border-surface-border p-5 rounded-2xl shadow-xs space-y-3">
+      <div class="flex items-center justify-between text-slate-500">
+        <span class="text-xs font-bold uppercase tracking-wider font-mono text-rose-700">Threat Ratio</span>
+        <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+          <span class="material-symbols-outlined text-[18px]">crisis_alert</span>
+        </div>
+      </div>
+      <div>
+        <div class="text-2xl font-black font-sans text-rose-600 tracking-tight">{{ overall_fraud_rate }}%</div>
+        <p class="text-xs font-mono text-slate-500 mt-0.5">{{ total_fraud }} Flagged / {{ total_txns }} Scored</p>
+      </div>
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-mono text-slate-400">
+        <span>Channel Breach Rate</span>
+        <span class="text-rose-600 font-bold">{{ legit_count }} Safe</span>
+      </div>
+    </div>
+
+    <!-- KRPI 2: Mean Fraud Ticket Size -->
+    <div class="bg-white border border-surface-border p-5 rounded-2xl shadow-xs space-y-3">
+      <div class="flex items-center justify-between text-slate-500">
+        <span class="text-xs font-bold uppercase tracking-wider font-mono text-slate-600">Mean Fraud Ticket</span>
+        <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+          <span class="material-symbols-outlined text-[18px]">price_change</span>
+        </div>
+      </div>
+      <div>
+        <div class="text-2xl font-black font-sans text-slate-900 tracking-tight">PKR {{ "{:,.0f}".format(mean_fraud_amount) }}</div>
+        <p class="text-xs font-mono text-slate-500 mt-0.5">vs PKR {{ "{:,.0f}".format(mean_legit_amount) }} Legit Avg</p>
+      </div>
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-mono text-slate-400">
+        <span>Attack Severity Multiplier</span>
+        <span class="text-brand-600 font-bold">{{ "%.1fx"|format(mean_fraud_amount / mean_legit_amount if mean_legit_amount > 0 else 1) }}</span>
+      </div>
+    </div>
+
+    <!-- KRPI 3: New Device Vulnerability -->
+    <div class="bg-white border border-surface-border p-5 rounded-2xl shadow-xs space-y-3">
+      <div class="flex items-center justify-between text-slate-500">
+        <span class="text-xs font-bold uppercase tracking-wider font-mono text-amber-700">New Device Risk</span>
+        <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+          <span class="material-symbols-outlined text-[18px]">mobile_off</span>
+        </div>
+      </div>
+      <div>
+        <div class="text-2xl font-black font-sans text-amber-600 tracking-tight">{{ new_device_fraud_rate }}%</div>
+        <p class="text-xs font-mono text-slate-500 mt-0.5">{{ new_device_fraud }} Fraudulent / {{ new_device_total }} New</p>
+      </div>
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-mono text-slate-400">
+        <span>Hardware Anomaly Flag</span>
+        <span class="text-amber-700 font-bold">High Correlation</span>
+      </div>
+    </div>
+
+    <!-- KRPI 4: Capital Preserved -->
+    <div class="bg-white border border-surface-border p-5 rounded-2xl shadow-xs space-y-3">
+      <div class="flex items-center justify-between text-slate-500">
+        <span class="text-xs font-bold uppercase tracking-wider font-mono text-emerald-700">Capital Protected</span>
+        <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+          <span class="material-symbols-outlined text-[18px]">shield</span>
+        </div>
+      </div>
+      <div>
+        <div class="text-2xl font-black font-sans text-emerald-600 tracking-tight">PKR {{ "{:,.0f}".format(fraud_volume) }}</div>
+        <p class="text-xs font-mono text-slate-500 mt-0.5">Out of PKR {{ "{:,.0f}".format(total_volume) }} Total</p>
+      </div>
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-mono text-slate-400">
+        <span>Loss Avoidance Rate</span>
+        <span class="text-emerald-700 font-bold">100% Intercepted</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================= CHARTS ROW 1: PAYMENT METHOD & GEOLOCATION ================= -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+    
+    <!-- Payment Method Vulnerability Bar Chart (7 cols) -->
+    <div class="lg:col-span-7 bg-white border border-surface-border p-6 rounded-2xl shadow-xs flex flex-col justify-between">
+      <div class="flex items-center justify-between pb-4 border-b border-surface-border mb-4">
+        <div>
+          <h2 class="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px] text-brand-600">credit_card</span>
+            Payment Instrument Threat Correlation
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">Total processed volume vs intercepted fraudulent capital per instrument</p>
+        </div>
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold uppercase">PKR Volume</span>
+      </div>
+
+      <div class="relative w-full h-64">
+        <canvas id="paymentMethodsChart"></canvas>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-mono text-slate-400 mt-4">
+        <span>Primary Risk Vector: Credit Card (Card-Not-Present)</span>
+        <span>Target: Digital Wallets</span>
+      </div>
+    </div>
+
+    <!-- Geolocation Risk Concentration Donut (5 cols) -->
+    <div class="lg:col-span-5 bg-white border border-surface-border p-6 rounded-2xl shadow-xs flex flex-col justify-between">
+      <div class="flex items-center justify-between pb-4 border-b border-surface-border mb-4">
+        <div>
+          <h2 class="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px] text-brand-600">public</span>
+            Geolocation Incident Segregation
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">Fraud frequency distribution across geographical perimeters</p>
+        </div>
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-50 text-rose-700 font-semibold uppercase">Incidents</span>
+      </div>
+
+      <div class="relative w-full h-64 flex items-center justify-center">
+        <canvas id="geoChart"></canvas>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-mono text-slate-400 mt-4">
+        <span>Highest Anomaly Density: Foreign Gateway</span>
+        <span>Local Perimeter: Low Threat</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================= CHARTS ROW 2: SCORE SPECTRUM & TABULAR AUDIT ================= -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    
+    <!-- Left: Score Distribution Histogram (5 cols) -->
+    <div class="lg:col-span-5 bg-white border border-surface-border p-6 rounded-2xl shadow-xs space-y-4">
+      <div class="pb-3 border-b border-surface-border">
+        <h2 class="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
+          <span class="material-symbols-outlined text-[18px] text-brand-600">bar_chart</span>
+          Inference Risk Probability Spectrum
+        </h2>
+        <p class="text-xs text-slate-500 mt-0.5">Distribution of all transactions across ML risk probability tiers</p>
+      </div>
+
+      <div class="relative w-full h-56">
+        <canvas id="scoreSpectrumChart"></canvas>
+      </div>
+
+      <div class="space-y-1.5 pt-2 border-t border-slate-100 text-xs font-mono">
+        <div class="flex items-center justify-between text-slate-600">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> 0% – 20% (Ultra-Safe)</span>
+          <span class="font-bold text-slate-900">{{ score_buckets[0] }} txns</span>
+        </div>
+        <div class="flex items-center justify-between text-slate-600">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> 20% – 40% (Low Risk)</span>
+          <span class="font-bold text-slate-900">{{ score_buckets[1] }} txns</span>
+        </div>
+        <div class="flex items-center justify-between text-slate-600">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400"></span> 40% – 60% (Ambiguous)</span>
+          <span class="font-bold text-slate-900">{{ score_buckets[2] }} txns</span>
+        </div>
+        <div class="flex items-center justify-between text-slate-600">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-orange-500"></span> 60% – 80% (Suspicious)</span>
+          <span class="font-bold text-slate-900">{{ score_buckets[3] }} txns</span>
+        </div>
+        <div class="flex items-center justify-between text-slate-600">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rose-600"></span> 80% – 100% (Critical Threat)</span>
+          <span class="font-bold text-rose-600">{{ score_buckets[4] }} txns</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: High-Density Channel Breakdown Tables (7 cols) -->
+    <div class="lg:col-span-7 bg-white border border-surface-border rounded-2xl shadow-xs overflow-hidden space-y-6">
+      
+      <!-- Payment Method Table -->
+      <div>
+        <div class="p-5 border-b border-surface-border flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Payment Instrument Breakdown</h3>
+            <p class="text-xs text-slate-500">Detailed volume and threat statistics per instrument</p>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-brand-50 text-brand-700 font-semibold uppercase">Channel Audit</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-mono text-[10px] uppercase tracking-wider">
+              <tr>
+                <th class="py-2.5 px-4">Instrument</th>
+                <th class="py-2.5 px-4 text-center">Total Txns</th>
+                <th class="py-2.5 px-4 text-center">Fraud Count</th>
+                <th class="py-2.5 px-4 text-center">Fraud Rate</th>
+                <th class="py-2.5 px-4 text-right">Quarantined PKR</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-mono">
+              {% for pm in payment_methods %}
+              <tr class="hover:bg-slate-50/80 transition-colors">
+                <td class="py-3 px-4 font-bold text-slate-900 font-sans">
+                  {{ pm.name }}
+                </td>
+                <td class="py-3 px-4 text-center text-slate-700">
+                  {{ pm.total_count }}
+                </td>
+                <td class="py-3 px-4 text-center font-bold text-rose-600">
+                  {{ pm.fraud_count }}
+                </td>
+                <td class="py-3 px-4 text-center">
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {% if pm.fraud_rate >= 40 %}bg-rose-100 text-rose-800{% elif pm.fraud_rate >= 20 %}bg-amber-100 text-amber-800{% else %}bg-emerald-100 text-emerald-800{% endif %}">
+                    {{ pm.fraud_rate }}%
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-right font-bold text-slate-900">
+                  PKR {{ "{:,.2f}".format(pm.fraud_amount) }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Geolocation Table -->
+      <div class="pt-2 border-t border-surface-border">
+        <div class="px-5 pb-3 flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Geolocation Perimeter Matrix</h3>
+            <p class="text-xs text-slate-500">Transaction dispersion and regional breach severity</p>
+          </div>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold uppercase">Regional</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-mono text-[10px] uppercase tracking-wider">
+              <tr>
+                <th class="py-2.5 px-4">Origin Perimeter</th>
+                <th class="py-2.5 px-4 text-center">Total Volume</th>
+                <th class="py-2.5 px-4 text-center">Breach Count</th>
+                <th class="py-2.5 px-4 text-center">Risk Index</th>
+                <th class="py-2.5 px-4 text-right">Quarantined PKR</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-mono">
+              {% for loc in locations %}
+              <tr class="hover:bg-slate-50/80 transition-colors">
+                <td class="py-3 px-4 font-bold text-slate-900 font-sans">
+                  {{ loc.name }}
+                </td>
+                <td class="py-3 px-4 text-center text-slate-700">
+                  {{ loc.total_count }}
+                </td>
+                <td class="py-3 px-4 text-center font-bold text-rose-600">
+                  {{ loc.fraud_count }}
+                </td>
+                <td class="py-3 px-4 text-center">
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {% if loc.fraud_rate >= 50 %}bg-rose-100 text-rose-800{% elif loc.fraud_rate >= 20 %}bg-amber-100 text-amber-800{% else %}bg-emerald-100 text-emerald-800{% endif %}">
+                    {{ loc.fraud_rate }}%
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-right font-bold text-slate-900">
+                  PKR {{ "{:,.2f}".format(loc.fraud_amount) }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Chart.js Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+
+    // 1. Payment Methods Chart (Grouped Bar)
+    const pmLabels = {{ payment_methods | map(attribute='name') | list | tojson }};
+    const pmTotalAmounts = {{ payment_methods | map(attribute='total_amount') | list | tojson }};
+    const pmFraudAmounts = {{ payment_methods | map(attribute='fraud_amount') | list | tojson }};
+
+    const ctxPM = document.getElementById('paymentMethodsChart');
+    if (ctxPM) {
+      new Chart(ctxPM, {
+        type: 'bar',
+        data: {
+          labels: pmLabels,
+          datasets: [
+            {
+              label: 'Total PKR Processed',
+              data: pmTotalAmounts,
+              backgroundColor: '#93C5FD',
+              borderRadius: 6,
+              borderWidth: 0
+            },
+            {
+              label: 'Flagged Fraud PKR',
+              data: pmFraudAmounts,
+              backgroundColor: '#EF4444',
+              borderRadius: 6,
+              borderWidth: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                boxWidth: 12,
+                font: { family: 'Geist, sans-serif', size: 11 }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.dataset.label + ': PKR ' + Number(context.raw).toLocaleString();
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: '#F1F5F9' },
+              ticks: {
+                callback: function(value) { return 'PKR ' + (value >= 1000 ? (value/1000).toFixed(0) + 'k' : value); },
+                font: { family: 'JetBrains Mono, monospace', size: 10 }
+              }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { family: 'Geist, sans-serif', size: 11 } }
+            }
+          }
+        }
+      });
+    }
+
+    // 2. Geolocation Risk Donut Chart
+    const geoLabels = {{ locations | map(attribute='name') | list | tojson }};
+    const geoFraudCounts = {{ locations | map(attribute='fraud_count') | list | tojson }};
+
+    const ctxGeo = document.getElementById('geoChart');
+    if (ctxGeo) {
+      new Chart(ctxGeo, {
+        type: 'doughnut',
+        data: {
+          labels: geoLabels,
+          datasets: [{
+            data: geoFraudCounts,
+            backgroundColor: ['#EF4444', '#F59E0B', '#10B981'],
+            borderWidth: 3,
+            borderColor: '#FFFFFF'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                boxWidth: 12,
+                font: { family: 'Geist, sans-serif', size: 11 }
+              }
+            }
+          },
+          cutout: '68%'
+        }
+      });
+    }
+
+    // 3. Score Spectrum Bar Chart
+    const scoreBuckets = {{ score_buckets | tojson }};
+    const ctxScore = document.getElementById('scoreSpectrumChart');
+    if (ctxScore) {
+      new Chart(ctxScore, {
+        type: 'bar',
+        data: {
+          labels: ['0-20%', '20-40%', '40-60%', '60-80%', '80-100%'],
+          datasets: [{
+            label: 'Transactions Count',
+            data: scoreBuckets,
+            backgroundColor: ['#10B981', '#34D399', '#FBBF24', '#F97316', '#EF4444'],
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) { return ctx.raw + ' Transactions in tier'; }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: '#F1F5F9' },
+              ticks: { font: { family: 'JetBrains Mono, monospace', size: 10 } }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { family: 'JetBrains Mono, monospace', size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+  });
+</script>
+{% endblock %}

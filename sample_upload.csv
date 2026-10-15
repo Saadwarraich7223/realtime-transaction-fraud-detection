@@ -1,0 +1,11 @@
+amount,hour,location,device_type,payment_method,txn_last_24h,is_new_device
+45.50,14,local,mobile,debit_card,1,0
+120.00,10,domestic,desktop,credit_card,2,0
+8900.00,2,foreign,mobile,credit_card,11,1
+65.25,19,local,mobile,wallet,3,0
+15000.00,4,foreign,desktop,credit_card,9,1
+230.00,12,domestic,mobile,debit_card,1,0
+55.00,16,local,desktop,wallet,2,0
+7200.00,1,foreign,mobile,credit_card,14,1
+89.99,20,local,mobile,credit_card,2,0
+340.00,11,domestic,desktop,debit_card,4,0

@@ -1,0 +1,508 @@
+{% extends "base.html" %}
+
+{% block title %}Fraud Alerts Triage & Incident Investigation — FraudGuard AI{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-7xl mx-auto">
+
+  <!-- ================= TOP HEADER ================= -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-surface-border">
+    <div>
+      <div class="flex items-center gap-2">
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Fraud Alerts & Case Triage</h1>
+        <span class="text-xs font-mono font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-0.5 rounded-full">Incident Queue</span>
+      </div>
+      <p class="text-xs text-slate-500 mt-0.5">SOC Analyst verification queue: review ML-flagged anomalies, record audit notes, and disposition incident cases.</p>
+    </div>
+
+    <!-- Right Quick Controls -->
+    <div class="flex items-center gap-2.5">
+      <a href="{{ url_for('analytics') }}" class="bg-white hover:bg-slate-50 border border-surface-border text-slate-700 font-semibold text-xs px-3.5 py-2 rounded-xl shadow-xs flex items-center gap-1.5 transition">
+        <span class="material-symbols-outlined text-[16px] text-brand-600">insights</span>
+        <span>Threat Analytics</span>
+      </a>
+
+      <a href="{{ url_for('analyze') }}" class="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs px-3.5 py-2 rounded-xl shadow-xs flex items-center gap-1.5 transition">
+        <span class="material-symbols-outlined text-[16px]">add_circle</span>
+        <span>+ Test Anomaly</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ================= 4 TRIAGE KPI STATUS CARDS ================= -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    
+    <!-- KPI 1: Pending Action (NEW) -->
+    <div class="bg-white border border-surface-border p-5 rounded-2xl shadow-xs space-y-3 cursor-pointer hover:border-rose-300 transition" onclick="filterByStatus('NEW')">
+      <div class="flex items-center justify-between text-slate-500">
+        <span class="text-xs font-bold uppercase tracking-wider font-mono text-rose-700">Pending Triage</span>
+        <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+          <span class="material-symbols-outlined text-[18px]">notification_important</span>
+        </div>
+      </div>
+      <div>
+        <div class="text-2xl font-black font-sans text-rose-600 tracking-tight" id="kpiNewCount">{{ new_count }}</div>
+        <p class="text-xs font-mono text-slate-500 mt-0.5">Awaiting SOC Disposition</p>
+      </div>
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-mono">
+        <span class="text-rose-600 font-bold flex items-center gap-1">
+          <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span> Action Required
+        </span>
+        <span class="text-slate-400">P1 Severity</span>
+      </div>
+    </div>
+
+    <!-- KPI 2: Under Review -->
+    <div class="bg-white border border-surface-border p-5 rounded-2xl shadow-xs space-y-3 cursor-pointer hover:border-amber-300 transition" onclick="filterByStatus('UNDER_REVIEW')">
+      <div class="flex items-center justify-between text-slate-500">
+        <span class="text-xs font-bold uppercase tracking-wider font-mono text-amber-700">Under Review</span>
+        <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+          <span class="material-symbols-outlined text-[18px]">pending</span>
+        </div>
+      </div>
+      <div>
+        <div class="text-2xl font-black font-sans text-amber-600 tracking-tight" id="kpiReviewCount">{{ in_review_count }}</div>
+        <p class="text-xs font-mono text-slate-500 mt-0.5">In-Flight Investigation</p>
+      </div>
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-mono text-slate-400">
+        <span>Analyst Assigned</span>
+        <span class="text-amber-700 font-bold">Investigation</span>
+      </div>
+    </div>
+
+    <!-- KPI 3: Confirmed Fraud -->
+    <div class="bg-white border border-surface-border p-5 rounded-2xl shadow-xs space-y-3 cursor-pointer hover:border-slate-400 transition" onclick="filterByStatus('CONFIRMED_FRAUD')">
+      <div class="flex items-center justify-between text-slate-500">
+        <span class="text-xs font-bold uppercase tracking-wider font-mono text-slate-700">Confirmed Fraud</span>
+        <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+          <span class="material-symbols-outlined text-[18px]">gavel</span>
+        </div>
+      </div>
+      <div>
+        <div class="text-2xl font-black font-sans text-slate-900 tracking-tight" id="kpiConfirmedCount">{{ confirmed_count }}</div>
+        <p class="text-xs font-mono text-slate-500 mt-0.5">True Positive Breaches</p>
+      </div>
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-mono text-slate-400">
+        <span>Account Quarantined</span>
+        <span class="text-slate-800 font-bold">Resolved</span>
+      </div>
+    </div>
+
+    <!-- KPI 4: False Positive (Cleared) -->
+    <div class="bg-white border border-surface-border p-5 rounded-2xl shadow-xs space-y-3 cursor-pointer hover:border-emerald-300 transition" onclick="filterByStatus('FALSE_POSITIVE')">
+      <div class="flex items-center justify-between text-slate-500">
+        <span class="text-xs font-bold uppercase tracking-wider font-mono text-emerald-700">False Positives</span>
+        <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+          <span class="material-symbols-outlined text-[18px]">verified</span>
+        </div>
+      </div>
+      <div>
+        <div class="text-2xl font-black font-sans text-emerald-600 tracking-tight" id="kpiFpCount">{{ fp_count }}</div>
+        <p class="text-xs font-mono text-slate-500 mt-0.5">Customer Verified Safe</p>
+      </div>
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-mono text-slate-400">
+        <span>Model Feedback Loop</span>
+        <span class="text-emerald-700 font-bold">Whitelisted</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================= FILTER & SEARCH TOOLBAR ================= -->
+  <div class="bg-white border border-surface-border p-4 rounded-2xl shadow-xs space-y-3">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+      
+      <!-- Status Filter Tabs -->
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+        <button type="button" onclick="filterByStatus('ALL')" id="tabALL" class="status-tab-active px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+          All Alerts ({{ total_alerts }})
+        </button>
+        <button type="button" onclick="filterByStatus('NEW')" id="tabNEW" class="status-tab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
+          Pending Triage ({{ new_count }})
+        </button>
+        <button type="button" onclick="filterByStatus('UNDER_REVIEW')" id="tabUNDER_REVIEW" class="status-tab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
+          Under Review ({{ in_review_count }})
+        </button>
+        <button type="button" onclick="filterByStatus('CONFIRMED_FRAUD')" id="tabCONFIRMED_FRAUD" class="status-tab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
+          Confirmed Fraud ({{ confirmed_count }})
+        </button>
+        <button type="button" onclick="filterByStatus('FALSE_POSITIVE')" id="tabFALSE_POSITIVE" class="status-tab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
+          False Positive ({{ fp_count }})
+        </button>
+      </div>
+
+      <!-- Live Search Box -->
+      <div class="relative w-full md:w-72">
+        <span class="material-symbols-outlined absolute left-3 top-2 text-slate-400 text-[18px]">search</span>
+        <input 
+          type="text" 
+          id="alertsSearch" 
+          onkeyup="searchAlertsTable()" 
+          placeholder="Search alert, txn #, amount..." 
+          class="w-full bg-slate-50 focus:bg-white border border-slate-300 text-xs rounded-xl py-1.5 pl-9 pr-3 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/10 focus:outline-none transition"
+        />
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= HIGH-DENSITY INCIDENT QUEUE TABLE ================= -->
+  <div class="bg-white border border-surface-border rounded-2xl shadow-xs overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs" id="alertsTable">
+        <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-mono text-[10px] uppercase tracking-wider">
+          <tr>
+            <th class="py-3 px-4">Alert ID</th>
+            <th class="py-3 px-4">Transaction Details</th>
+            <th class="py-3 px-4">Context Vectors</th>
+            <th class="py-3 px-4 text-center">Risk Score</th>
+            <th class="py-3 px-4 text-center">Triage Status</th>
+            <th class="py-3 px-4 text-right">Quick Disposition</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 font-sans" id="alertsTableBody">
+          {% for a in alerts %}
+          <tr 
+            class="alert-row hover:bg-slate-50/80 transition-colors"
+            data-alert-id="{{ a.alert_id }}"
+            data-status="{{ a.status }}"
+            data-search="{{ a.alert_id }} {{ a.transaction_id }} {{ a.amount }} {{ a.location }} {{ a.payment_method }} {{ a.message }}"
+          >
+            <!-- Alert ID & Created At -->
+            <td class="py-3 px-4 font-mono">
+              <a href="{{ url_for('transaction_detail', txn_id=a.transaction_id) }}" class="font-bold text-slate-900 hover:text-brand-600 hover:underline flex items-center gap-1" title="Open Forensic Dossier">
+                <span>#ALT-{{ a.alert_id }}</span>
+                <span class="material-symbols-outlined text-[13px]">open_in_new</span>
+              </a>
+              <div class="text-[10px] text-slate-400 mt-0.5">{{ a.created_at[:19].replace('T', ' ') if a.created_at else 'Real-time' }}</div>
+            </td>
+
+            <!-- Transaction Details (Amount & ID) -->
+            <td class="py-3 px-4">
+              <div class="font-bold font-mono text-slate-900">PKR {{ "{:,.2f}".format(a.amount) if a.amount else 'N/A' }}</div>
+              <div class="text-[11px] font-mono text-slate-500">
+                <a href="{{ url_for('transaction_detail', txn_id=a.transaction_id) }}" class="text-brand-600 hover:text-brand-800 hover:underline font-bold">Txn #{{ a.transaction_id }}</a> • Hour {{ "%02d:00"|format(a.hour) if a.hour is not none else 'N/A' }}
+              </div>
+            </td>
+
+            <!-- Context Vectors (Location & Method) -->
+            <td class="py-3 px-4">
+              <div class="flex items-center gap-1.5">
+                <span class="capitalize font-semibold text-slate-800">{{ a.location }}</span>
+                <span class="text-slate-300">•</span>
+                <span class="capitalize text-slate-600">{{ a.payment_method.replace('_', ' ') }}</span>
+              </div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">
+                Device: {{ a.device_type }} {% if a.is_new_device == 1 %}• <strong class="text-rose-600">New Hardware</strong>{% endif %}
+              </div>
+            </td>
+
+            <!-- Risk Score Badge -->
+            <td class="py-3 px-4 text-center font-mono">
+              <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold {% if (a.score or 0.8) >= 0.70 %}bg-rose-50 text-rose-700 border border-rose-200{% elif (a.score or 0.8) >= 0.40 %}bg-amber-50 text-amber-700 border border-amber-200{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %}">
+                {{ "%.1f"|format((a.score or 0.85) * 100) }}%
+              </span>
+            </td>
+
+            <!-- Triage Status Badge -->
+            <td class="py-3 px-4 text-center" id="statusBadge-{{ a.alert_id }}">
+              {% if a.status == 'NEW' %}
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                  <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> NEW
+                </span>
+              {% elif a.status == 'UNDER_REVIEW' %}
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> IN REVIEW
+                </span>
+              {% elif a.status == 'CONFIRMED_FRAUD' %}
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-300">
+                  <span class="material-symbols-outlined text-[13px]">gavel</span> FRAUD
+                </span>
+              {% elif a.status == 'FALSE_POSITIVE' %}
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span class="material-symbols-outlined text-[13px]">check_circle</span> CLEARED
+                </span>
+              {% else %}
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold bg-slate-100 text-slate-600">
+                  {{ a.status }}
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- Quick Disposition Buttons -->
+            <td class="py-3 px-4 text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <button 
+                  type="button" 
+                  onclick="quickTriage({{ a.alert_id }}, 'CONFIRMED_FRAUD')" 
+                  title="Confirm Fraud" 
+                  class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                >
+                  <span class="material-symbols-outlined text-[18px]">gavel</span>
+                </button>
+                <button 
+                  type="button" 
+                  onclick="quickTriage({{ a.alert_id }}, 'FALSE_POSITIVE')" 
+                  title="Mark False Positive" 
+                  class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+                >
+                  <span class="material-symbols-outlined text-[18px]">verified</span>
+                </button>
+                <button 
+                  type="button" 
+                  onclick="openInvestigateDrawer({{ a.alert_id }}, {{ a.transaction_id }}, '{{ a.amount }}', '{{ a.location }}', '{{ a.device_type }}', '{{ a.payment_method }}', '{{ a.status }}', '{{ a.score or 0.85 }}', '{{ a.notes|replace('\'', '\\\'') }}')" 
+                  class="text-xs font-semibold text-brand-600 hover:text-brand-800 bg-brand-50 hover:bg-brand-100 px-2.5 py-1 rounded-lg transition flex items-center gap-1 ml-1"
+                >
+                  <span>Investigate</span>
+                  <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ================= SLIDE-OVER INVESTIGATION DRAWER ================= -->
+  <div id="drawerBackdrop" onclick="closeDrawer()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden transition-opacity"></div>
+  
+  <div id="investigateDrawer" class="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white border-l border-surface-border shadow-2xl flex flex-col justify-between translate-x-full transition-transform duration-300">
+    <div>
+      <!-- Drawer Header -->
+      <div class="p-5 border-b border-surface-border flex items-center justify-between">
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="text-base font-bold text-slate-900" id="drawerTitle">Investigate Alert</h3>
+            <a href="#" id="drawerTxnLink" class="text-[10px] font-mono px-2 py-0.5 rounded bg-brand-50 text-brand-700 hover:underline font-bold flex items-center gap-1" title="Open Transaction Dossier">
+              <span id="drawerTxnBadge">Txn #--</span>
+              <span class="material-symbols-outlined text-[12px]">open_in_new</span>
+            </a>
+          </div>
+          <p class="text-xs text-slate-500 mt-0.5">SOC Analyst verification & disposition audit notes</p>
+        </div>
+        <button type="button" onclick="closeDrawer()" class="p-1 text-slate-400 hover:text-slate-700 rounded-lg">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+      </div>
+
+      <!-- Drawer Content -->
+      <div class="p-5 space-y-5 overflow-y-auto max-h-[calc(100vh-180px)]">
+        
+        <!-- Score & Risk Summary -->
+        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono text-slate-500 uppercase font-semibold">Predicted Probability</span>
+            <span class="text-lg font-black font-mono text-rose-600" id="drawerScore">--%</span>
+          </div>
+          <div class="text-xs text-slate-700" id="drawerReason">
+            Transaction flagged due to anomalous telemetry pattern.
+          </div>
+        </div>
+
+        <!-- Transaction Vector Grid -->
+        <div class="space-y-2">
+          <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold">Transaction Attributes</span>
+          <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+            <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+              <span class="text-slate-400 block text-[10px]">AMOUNT</span>
+              <span class="font-bold text-slate-900" id="drawerAmount">PKR --</span>
+            </div>
+            <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+              <span class="text-slate-400 block text-[10px]">GEOLOCATION</span>
+              <span class="font-bold text-slate-900 capitalize" id="drawerLocation">--</span>
+            </div>
+            <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+              <span class="text-slate-400 block text-[10px]">INSTRUMENT</span>
+              <span class="font-bold text-slate-900 capitalize" id="drawerMethod">--</span>
+            </div>
+            <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+              <span class="text-slate-400 block text-[10px]">HARDWARE</span>
+              <span class="font-bold text-slate-900 capitalize" id="drawerDevice">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Disposition Decision Form -->
+        <div class="space-y-3 pt-2 border-t border-slate-100">
+          <input type="hidden" id="drawerAlertId" value="">
+          
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">Triage Disposition</label>
+            <select id="drawerStatusSelect" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-2.5 focus:border-brand-600 focus:outline-none">
+              <option value="NEW">🔴 Pending Triage (NEW)</option>
+              <option value="UNDER_REVIEW">🟡 Under Investigation (IN_REVIEW)</option>
+              <option value="CONFIRMED_FRAUD">⚫ Confirmed Fraud Threat (DISPOSITION_FRAUD)</option>
+              <option value="FALSE_POSITIVE">🟢 False Positive / Customer Verified (CLEARED)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-800 mb-1">Analyst Case Investigation Notes</label>
+            <textarea 
+              id="drawerNotes" 
+              rows="3" 
+              placeholder="Record forensic observations, customer verification contact, or mitigation actions taken..." 
+              class="w-full bg-white border border-slate-300 text-xs rounded-xl p-2.5 focus:border-brand-600 focus:outline-none font-sans"
+            ></textarea>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Drawer Footer Actions -->
+    <div class="p-5 border-t border-surface-border bg-slate-50/50 flex items-center justify-between gap-2">
+      <a id="drawerDossierBtn" href="#" class="px-3.5 py-2 border border-brand-300 bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-semibold rounded-xl transition flex items-center gap-1.5" title="Open Complete Forensic Dossier">
+        <span class="material-symbols-outlined text-[16px]">visibility</span>
+        <span>Full Dossier</span>
+      </a>
+
+      <button type="button" onclick="closeDrawer()" class="px-3 py-2 border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl transition">
+        Cancel
+      </button>
+
+      <button type="button" onclick="saveDrawerDisposition()" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs py-2 rounded-xl shadow-xs transition flex items-center justify-center gap-1.5">
+        <span class="material-symbols-outlined text-[16px]">save</span>
+        <span>Save</span>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Styles for Active Tabs -->
+<style>
+  .status-tab-active {
+    background-color: #2563EB;
+    color: #FFFFFF;
+  }
+</style>
+
+<!-- Triage Client-Side Logic -->
+<script>
+  let activeStatusFilter = 'ALL';
+
+  function filterByStatus(status) {
+    activeStatusFilter = status;
+    
+    // Update active tab styles
+    document.querySelectorAll('[id^="tab"]').forEach(el => {
+      el.className = 'status-tab px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition';
+    });
+    const activeTab = document.getElementById('tab' + status);
+    if (activeTab) {
+      activeTab.className = 'status-tab-active px-3 py-1.5 rounded-lg text-xs font-semibold transition';
+    }
+
+    applyFilters();
+  }
+
+  function searchAlertsTable() {
+    applyFilters();
+  }
+
+  function applyFilters() {
+    const q = (document.getElementById('alertsSearch').value || '').toLowerCase().trim();
+    const rows = document.querySelectorAll('.alert-row');
+
+    rows.forEach(r => {
+      const status = r.getAttribute('data-status');
+      const searchData = (r.getAttribute('data-search') || '').toLowerCase();
+
+      const matchesStatus = (activeStatusFilter === 'ALL' || status === activeStatusFilter);
+      const matchesSearch = !q || searchData.includes(q);
+
+      if (matchesStatus && matchesSearch) {
+        r.style.display = '';
+      } else {
+        r.style.display = 'none';
+      }
+    });
+  }
+
+  async function quickTriage(alertId, newStatus) {
+    try {
+      const res = await fetch('{{ url_for("triage_alert") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alert_id: alertId, status: newStatus })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        updateAlertUI(alertId, newStatus);
+      }
+    } catch(err) {
+      console.error(err);
+    }
+  }
+
+  function updateAlertUI(alertId, newStatus) {
+    const row = document.querySelector(`.alert-row[data-alert-id="${alertId}"]`);
+    if (row) {
+      row.setAttribute('data-status', newStatus);
+    }
+    const badge = document.getElementById('statusBadge-' + alertId);
+    if (badge) {
+      if (newStatus === 'CONFIRMED_FRAUD') {
+        badge.innerHTML = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-300"><span class="material-symbols-outlined text-[13px]">gavel</span> FRAUD</span>`;
+      } else if (newStatus === 'FALSE_POSITIVE') {
+        badge.innerHTML = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"><span class="material-symbols-outlined text-[13px]">check_circle</span> CLEARED</span>`;
+      } else if (newStatus === 'UNDER_REVIEW') {
+        badge.innerHTML = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> IN REVIEW</span>`;
+      } else {
+        badge.innerHTML = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> NEW</span>`;
+      }
+    }
+  }
+
+  function openInvestigateDrawer(alertId, txnId, amount, location, device, method, status, score, notes) {
+    document.getElementById('drawerAlertId').value = alertId;
+    document.getElementById('drawerTitle').textContent = `Alert #ALT-${alertId}`;
+    document.getElementById('drawerTxnBadge').textContent = `Txn #${txnId}`;
+    const txnUrl = `/transaction/${txnId}`;
+    const drawerTxnLink = document.getElementById('drawerTxnLink');
+    if (drawerTxnLink) drawerTxnLink.href = txnUrl;
+    const drawerDossierBtn = document.getElementById('drawerDossierBtn');
+    if (drawerDossierBtn) drawerDossierBtn.href = txnUrl;
+
+    document.getElementById('drawerScore').textContent = `${(parseFloat(score) * 100).toFixed(1)}%`;
+    document.getElementById('drawerAmount').textContent = `PKR ${parseFloat(amount).toLocaleString()}`;
+    document.getElementById('drawerLocation').textContent = location;
+    document.getElementById('drawerMethod').textContent = method.replace('_', ' ');
+    document.getElementById('drawerDevice').textContent = device;
+    document.getElementById('drawerStatusSelect').value = status;
+    document.getElementById('drawerNotes').value = notes || '';
+
+    document.getElementById('drawerBackdrop').classList.remove('hidden');
+    document.getElementById('investigateDrawer').classList.remove('translate-x-full');
+  }
+
+  function closeDrawer() {
+    document.getElementById('drawerBackdrop').classList.add('hidden');
+    document.getElementById('investigateDrawer').classList.add('translate-x-full');
+  }
+
+  async function saveDrawerDisposition() {
+    const alertId = document.getElementById('drawerAlertId').value;
+    const newStatus = document.getElementById('drawerStatusSelect').value;
+    const notes = document.getElementById('drawerNotes').value;
+
+    try {
+      const res = await fetch('{{ url_for("triage_alert") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alert_id: alertId, status: newStatus, notes: notes })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        updateAlertUI(alertId, newStatus);
+        closeDrawer();
+      }
+    } catch(err) {
+      console.error(err);
+    }
+  }
+</script>
+{% endblock %}

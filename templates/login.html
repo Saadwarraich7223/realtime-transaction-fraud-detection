@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>Workstation Sign In — FraudGuard AI</title>
+  
+  <!-- Fonts & Material Symbols -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Geist', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              200: '#bfdbfe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            },
+            surface: {
+              canvas: '#f8fafc',
+              card: '#ffffff',
+              muted: '#f1f5f9',
+              subtle: '#f8fafc',
+            },
+            slate: {
+              850: '#151e2e',
+              900: '#0f172a',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Smooth background dot pattern */
+    .bg-dot-pattern {
+      background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px);
+      background-size: 24px 24px;
+    }
+  </style>
+</head>
+
+<body class="bg-surface-canvas text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-brand-100 selection:text-brand-900 relative">
+  <!-- Ambient Dot Grid Background -->
+  <div class="fixed inset-0 pointer-events-none bg-dot-pattern opacity-40 z-0"></div>
+
+  <!-- Top App Bar -->
+  <header class="w-full z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- Brand Logo / Badge -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-brand-600 text-white flex items-center justify-center shadow-sm shadow-brand-500/20">
+          <span class="material-symbols-outlined text-[20px]">shield</span>
+        </div>
+        <div class="flex flex-col">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-bold text-slate-900 tracking-tight">FraudGuard AI</span>
+            <span class="text-xs text-slate-400 font-normal hidden sm:inline">•</span>
+            <span class="text-[11px] font-mono uppercase tracking-wider text-slate-500 hidden sm:inline font-medium">Workstation Access</span>
+          </div>
+          <span class="text-[11px] text-slate-400 font-medium sm:hidden">Workstation Access</span>
+        </div>
+      </div>
+
+      <!-- Security Chip -->
+      <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-200 shadow-sm">
+        <span class="material-symbols-outlined text-brand-600 text-[15px]">lock</span>
+        <span class="text-xs font-mono uppercase tracking-wider text-slate-600 font-medium">256-Bit SSL Protected</span>
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-1"></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="w-full flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 flex items-center justify-center relative z-10">
+    <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+      
+      <!-- ================= LEFT COLUMN: AUTHENTICATION CARD ================= -->
+      <div class="lg:col-span-5 flex justify-center w-full">
+        <div class="w-full max-w-[440px] bg-white rounded-2xl shadow-[0_12px_32px_-4px_rgba(15,23,42,0.08),0_4px_12px_-2px_rgba(15,23,42,0.03)] border border-slate-200/90 p-6 sm:p-8 relative">
+          
+          <!-- Header Area -->
+          <div class="text-center pb-2">
+            <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto mb-3 border border-brand-100 shadow-sm">
+              <span class="material-symbols-outlined text-[26px]">security</span>
+            </div>
+            <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">FraudGuard AI</h1>
+            <p class="text-xs uppercase tracking-wider text-brand-700 font-mono font-semibold mt-1">Transaction Risk &amp; Fraud Intelligence</p>
+            <p class="text-sm text-slate-500 mt-1">Sign in to your analyst workstation</p>
+          </div>
+
+          <!-- Flash Messages / Alert Banner -->
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, msg in messages %}
+                <div class="mt-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl p-3 flex items-start gap-2.5 transition-all" id="authAlert">
+                  <span class="material-symbols-outlined text-rose-600 text-[18px] shrink-0 mt-0.5">error</span>
+                  <div class="flex-1 text-left">
+                    <span class="text-xs font-semibold text-rose-900 block leading-tight">Authentication Notice</span>
+                    <span class="text-xs text-rose-700 leading-snug">{{ msg }}</span>
+                  </div>
+                  <button type="button" onclick="document.getElementById('authAlert').remove()" class="text-rose-400 hover:text-rose-700 text-xs p-0.5">✕</button>
+                </div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+
+          <!-- Login Form -->
+          <form class="mt-6 space-y-4" method="POST" action="{{ url_for('login') }}" id="loginForm">
+            <!-- Username / Email Field -->
+            <div class="space-y-1.5 text-left">
+              <label for="workstationEmail" class="block text-xs font-semibold text-slate-700 tracking-wide">
+                Workstation Email or Username <span class="text-rose-500">*</span>
+              </label>
+              <div class="relative flex items-center">
+                <span class="material-symbols-outlined absolute left-3 text-slate-400 text-[18px] pointer-events-none">badge</span>
+                <input 
+                  type="text" 
+                  id="workstationEmail" 
+                  name="username" 
+                  placeholder="admin@fraudguard.ai or admin" 
+                  required 
+                  autofocus 
+                  class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg py-2.5 pl-10 pr-3.5 shadow-sm focus:border-brand-600 focus:ring-4 focus:ring-brand-500/10 focus:outline-none transition placeholder:text-slate-400"
+                />
+              </div>
+            </div>
+
+            <!-- Password Field -->
+            <div class="space-y-1.5 text-left">
+              <div class="flex items-center justify-between">
+                <label for="workstationPassword" class="block text-xs font-semibold text-slate-700 tracking-wide">
+                  Workstation Password <span class="text-rose-500">*</span>
+                </label>
+                <a href="#" onclick="alert('Demo passwords: admin123 or user123')" class="text-xs text-brand-600 hover:text-brand-800 transition font-medium">Forgot key?</a>
+              </div>
+              <div class="relative flex items-center">
+                <span class="material-symbols-outlined absolute left-3 text-slate-400 text-[18px] pointer-events-none">key</span>
+                <input 
+                  type="password" 
+                  id="workstationPassword" 
+                  name="password" 
+                  placeholder="••••••••••••" 
+                  required 
+                  class="w-full bg-white border border-slate-300 text-slate-900 text-sm font-mono rounded-lg py-2.5 pl-10 pr-10 shadow-sm focus:border-brand-600 focus:ring-4 focus:ring-brand-500/10 focus:outline-none transition placeholder:text-slate-400"
+                />
+                <button 
+                  type="button" 
+                  id="togglePasswordBtn" 
+                  onclick="togglePasswordVisibility()" 
+                  class="absolute right-2.5 text-slate-400 hover:text-slate-700 p-1 transition flex items-center" 
+                  title="Toggle password visibility"
+                >
+                  <span class="material-symbols-outlined text-[18px]" id="pwdIcon">visibility</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Remember & Station Info -->
+            <div class="flex items-center justify-between pt-1 text-xs">
+              <label class="flex items-center gap-2 cursor-pointer select-none text-slate-600">
+                <input type="checkbox" checked class="w-4 h-4 rounded text-brand-600 border-slate-300 focus:ring-brand-500" />
+                <span>Remember session</span>
+              </label>
+              <span class="font-mono text-slate-400 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Node US-E1
+              </span>
+            </div>
+
+            <!-- Submit Button -->
+            <button 
+              type="submit" 
+              id="submitBtn" 
+              class="w-full mt-2 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-150 flex items-center justify-center gap-2 text-sm"
+            >
+              <span class="material-symbols-outlined text-[18px]">login</span>
+              <span>Sign In to Workstation</span>
+              <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+            </button>
+          </form>
+
+          <!-- Quick Demo Accounts (1-Click Fill for University Examiners) -->
+          <div class="mt-6 bg-slate-50 rounded-xl p-3.5 border border-slate-200">
+            <div class="flex items-center justify-between mb-2.5">
+              <div class="flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-brand-600 text-[16px]">bolt</span>
+                <span class="text-xs font-bold text-slate-800 uppercase tracking-wider font-mono">1-Click Demo Accounts</span>
+              </div>
+              <span class="text-[11px] font-mono text-brand-700 bg-brand-100/70 px-2 py-0.5 rounded font-medium">Quick Fill</span>
+            </div>
+
+            <div class="space-y-2">
+              <!-- Admin Analyst -->
+              <button 
+                type="button" 
+                onclick="fillCredentials('admin@fraudguard.ai', 'admin123', 'admin')" 
+                class="w-full text-left bg-white hover:bg-brand-50/50 p-2.5 rounded-lg border border-slate-200 shadow-sm transition flex items-center justify-between group"
+              >
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-7 h-7 rounded-md bg-brand-100 text-brand-700 flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-[16px]">security</span>
+                  </div>
+                  <div class="flex flex-col min-w-0">
+                    <span class="text-xs font-semibold text-slate-900 truncate">Admin Analyst (Tier 3 Lead)</span>
+                    <span class="text-[11px] font-mono text-slate-500 truncate">admin@fraudguard.ai • admin123</span>
+                  </div>
+                </div>
+                <span class="text-xs font-semibold text-brand-600 bg-slate-100 group-hover:bg-brand-600 group-hover:text-white px-2 py-1 rounded transition">
+                  Fill
+                </span>
+              </button>
+
+              <!-- Fraud Investigator -->
+              <button 
+                type="button" 
+                onclick="fillCredentials('user@fraudguard.ai', 'user123', 'user')" 
+                class="w-full text-left bg-white hover:bg-brand-50/50 p-2.5 rounded-lg border border-slate-200 shadow-sm transition flex items-center justify-between group"
+              >
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-7 h-7 rounded-md bg-slate-200 text-slate-700 flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-[16px]">manage_search</span>
+                  </div>
+                  <div class="flex flex-col min-w-0">
+                    <span class="text-xs font-semibold text-slate-900 truncate">Fraud Investigator (Field Risk)</span>
+                    <span class="text-[11px] font-mono text-slate-500 truncate">user@fraudguard.ai • user123</span>
+                  </div>
+                </div>
+                <span class="text-xs font-semibold text-brand-600 bg-slate-100 group-hover:bg-brand-600 group-hover:text-white px-2 py-1 rounded transition">
+                  Fill
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Bottom Security Attribution -->
+          <div class="mt-5 pt-4 border-t border-slate-200 flex flex-col items-center gap-1.5 text-center">
+            <div class="flex items-center gap-3 text-xs text-slate-500 font-medium">
+              <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> SOC-2 Type II</span>
+              <span class="text-slate-300">•</span>
+              <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-brand-600"></span> PCI-DSS L1</span>
+              <span class="text-slate-300">•</span>
+              <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-brand-600"></span> TLS 1.3</span>
+            </div>
+            <p class="text-[11px] font-mono text-slate-400">
+              FraudGuard AI Security Operations • Tier-1 Cyber Defense Gateway • Authorized Access Only
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ================= RIGHT COLUMN: FINTECH SHOWCASE & LIVE RADAR ================= -->
+      <div class="lg:col-span-7 flex flex-col justify-center space-y-6">
+        
+        <!-- Live Telemetry Strip -->
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-white border border-slate-200/90 px-4 py-2.5 rounded-xl shadow-sm">
+          <div class="flex items-center gap-2.5">
+            <span class="flex h-2.5 w-2.5 relative">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span class="text-xs font-bold font-mono tracking-wider text-slate-900 uppercase">Live Telemetry &amp; Threat Radar</span>
+          </div>
+          <div class="flex items-center gap-2 font-mono text-xs text-slate-600">
+            <span class="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-semibold">Engine Operational</span>
+            <span class="text-slate-300">•</span>
+            <span>Latency 14ms</span>
+            <span class="text-slate-300">•</span>
+            <span>Global Sync</span>
+          </div>
+        </div>
+
+        <!-- Hero Statement -->
+        <div class="space-y-2 text-left">
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
+            Autonomous Fraud Intelligence &amp; Adaptive Risk Scoring
+          </h2>
+          <p class="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl">
+            High-throughput machine learning detection pipeline designed to insulate online financial transactions, mitigate account takeovers, and prevent unauthorized chargebacks.
+          </p>
+        </div>
+
+        <!-- Metric Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Card 1: Shield Stats -->
+          <div class="bg-white border border-slate-200/90 p-5 rounded-xl shadow-sm space-y-3">
+            <div class="flex items-center justify-between text-slate-600">
+              <span class="text-xs font-bold uppercase tracking-wider font-mono">Protected Volume</span>
+              <span class="material-symbols-outlined text-brand-600 text-[20px]">verified</span>
+            </div>
+            <div class="flex items-baseline gap-2.5">
+              <span class="text-3xl font-black tracking-tight text-slate-900">$4.2M</span>
+              <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">+18.4% today</span>
+            </div>
+            <p class="text-xs text-slate-500 leading-snug">Continuous transaction defense against synthetic identity syndicates and bot attacks.</p>
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-mono">
+              <span class="text-slate-500">Model Accuracy</span>
+              <span class="font-bold text-brand-600">98.6% Baseline</span>
+            </div>
+          </div>
+
+          <!-- Card 2: Threat Spectrum -->
+          <div class="bg-white border border-slate-200/90 p-5 rounded-xl shadow-sm space-y-3">
+            <div class="flex items-center justify-between text-slate-600">
+              <span class="text-xs font-bold uppercase tracking-wider font-mono">Real-Time Distribution</span>
+              <span class="material-symbols-outlined text-brand-600 text-[20px]">donut_large</span>
+            </div>
+            <!-- Progress Bar -->
+            <div class="space-y-1.5 pt-1">
+              <div class="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+                <div class="bg-emerald-500 h-full transition-all" style="width: 82%" title="Safe (82%)"></div>
+                <div class="bg-amber-400 h-full transition-all" style="width: 14%" title="Flagged (14%)"></div>
+                <div class="bg-rose-500 h-full transition-all" style="width: 4%" title="Critical (4%)"></div>
+              </div>
+              <div class="flex items-center justify-between text-xs font-mono text-slate-600 pt-1">
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> 82% Pass</span>
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400"></span> 14% Challenge</span>
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rose-500"></span> 4% Block</span>
+              </div>
+            </div>
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-mono">
+              <span class="text-slate-500">Throughput Capacity</span>
+              <span class="font-bold text-slate-800">12,480 tx / sec</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Anomaly Detection Stream (Live Feed) -->
+        <div class="bg-white border border-slate-200/90 rounded-xl p-5 shadow-sm space-y-3.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-brand-600 text-[18px]">radar</span>
+              <span class="text-xs font-bold uppercase tracking-wider font-mono text-slate-900">Active Threat Triage Stream</span>
+            </div>
+            <span class="text-xs font-mono text-slate-500 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Flagged Events Feed
+            </span>
+          </div>
+
+          <div class="space-y-2">
+            <!-- Threat Event 1 -->
+            <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100/70 transition border border-slate-200/80">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200">
+                  <span class="material-symbols-outlined text-[16px]">warning</span>
+                </div>
+                <div class="flex flex-col min-w-0 text-left">
+                  <span class="text-xs font-bold text-slate-900 truncate">Velocity Spike: Foreign Location Cluster</span>
+                  <span class="text-xs font-mono text-slate-500 truncate">IP Geo Mismatch • 12 attempts in 24h</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0 ml-3">
+                <span class="text-xs font-bold font-mono text-rose-700 bg-rose-100 px-2.5 py-0.5 rounded border border-rose-200">94% Risk</span>
+                <span class="text-[11px] font-mono text-slate-400 hidden sm:inline">Just now</span>
+              </div>
+            </div>
+
+            <!-- Threat Event 2 -->
+            <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100/70 transition border border-slate-200/80">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200">
+                  <span class="material-symbols-outlined text-[16px]">credit_card_off</span>
+                </div>
+                <div class="flex flex-col min-w-0 text-left">
+                  <span class="text-xs font-bold text-slate-900 truncate">High-Amount Off-Hour Transaction</span>
+                  <span class="text-xs font-mono text-slate-500 truncate">Hour 03:00 • PKR 9,500.00 • Unregistered Device</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0 ml-3">
+                <span class="text-xs font-bold font-mono text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded border border-amber-200">88% Risk</span>
+                <span class="text-[11px] font-mono text-slate-400 hidden sm:inline">2s ago</span>
+              </div>
+            </div>
+
+            <!-- Threat Event 3 -->
+            <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 hover:bg-slate-100/70 transition border border-slate-200/80">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-8 h-8 rounded-lg bg-blue-50 text-brand-600 flex items-center justify-center shrink-0 border border-brand-200">
+                  <span class="material-symbols-outlined text-[16px]">devices</span>
+                </div>
+                <div class="flex flex-col min-w-0 text-left">
+                  <span class="text-xs font-bold text-slate-900 truncate">New Device Fingerprint Identified</span>
+                  <span class="text-xs font-mono text-slate-500 truncate">Desktop Linux • Domestic Session • Debit Card</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0 ml-3">
+                <span class="text-xs font-bold font-mono text-blue-700 bg-blue-100 px-2.5 py-0.5 rounded border border-blue-200">62% Risk</span>
+                <span class="text-[11px] font-mono text-slate-400 hidden sm:inline">6s ago</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Compliance Badges -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
+          <div class="bg-white border border-slate-200 py-2 px-3 rounded-lg flex items-center justify-center gap-2 shadow-sm">
+            <span class="material-symbols-outlined text-brand-600 text-[16px]">verified_user</span>
+            <span class="text-xs font-mono text-slate-700 font-semibold">PCI-DSS L1</span>
+          </div>
+          <div class="bg-white border border-slate-200 py-2 px-3 rounded-lg flex items-center justify-center gap-2 shadow-sm">
+            <span class="material-symbols-outlined text-brand-600 text-[16px]">shield</span>
+            <span class="text-xs font-mono text-slate-700 font-semibold">SOC-2 Type II</span>
+          </div>
+          <div class="bg-white border border-slate-200 py-2 px-3 rounded-lg flex items-center justify-center gap-2 shadow-sm">
+            <span class="material-symbols-outlined text-brand-600 text-[16px]">lock</span>
+            <span class="text-xs font-mono text-slate-700 font-semibold">ISO 27001</span>
+          </div>
+          <div class="bg-white border border-slate-200 py-2 px-3 rounded-lg flex items-center justify-center gap-2 shadow-sm">
+            <span class="material-symbols-outlined text-brand-600 text-[16px]">network_check</span>
+            <span class="text-xs font-mono text-slate-700 font-semibold">E2E ML Pipe</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Sticky Footer -->
+  <footer class="w-full py-3 bg-white/80 backdrop-blur-md border-t border-slate-200 text-slate-500 text-xs font-mono">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span>FraudGuard AI v2.4 • System Active</span>
+      </div>
+      <div class="flex items-center gap-4 text-slate-400">
+        <span>ENCRYPTED NODE // LOW-LATENCY</span>
+        <span>SESSION ID: FG-AUTH-SYS</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Interactive Scripts -->
+  <script>
+    function togglePasswordVisibility() {
+      const pwdInput = document.getElementById('workstationPassword');
+      const pwdIcon = document.getElementById('pwdIcon');
+      if (!pwdInput || !pwdIcon) return;
+      
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        pwdIcon.textContent = 'visibility_off';
+      } else {
+        pwdInput.type = 'password';
+        pwdIcon.textContent = 'visibility';
+      }
+    }
+
+    function fillCredentials(email, password, rawUser) {
+      const emailField = document.getElementById('workstationEmail');
+      const pwdField = document.getElementById('workstationPassword');
+      const alertBanner = document.getElementById('authAlert');
+
+      if (emailField && pwdField) {
+        emailField.value = email;
+        pwdField.value = password;
+
+        // Visual feedback highlight
+        emailField.classList.add('ring-2', 'ring-brand-500', 'bg-brand-50/50');
+        pwdField.classList.add('ring-2', 'ring-brand-500', 'bg-brand-50/50');
+        setTimeout(() => {
+          emailField.classList.remove('ring-2', 'ring-brand-500', 'bg-brand-50/50');
+          pwdField.classList.remove('ring-2', 'ring-brand-500', 'bg-brand-50/50');
+        }, 400);
+
+        if (alertBanner) {
+          alertBanner.remove();
+        }
+      }
+    }
+  </script>
+</body>
+</html>

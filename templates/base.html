@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>{% block title %}Executive Overview{% endblock %} — FraudGuard AI</title>
+  
+  <!-- Modern Typography & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+
+  <!-- Tailwind CSS & Chart.js -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Geist', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              200: '#bfdbfe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            },
+            surface: {
+              canvas: '#f8fafc',
+              card: '#ffffff',
+              muted: '#f1f5f9',
+              border: '#e2e8f0',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Smooth Light Theme Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    .nav-item-active {
+      background-color: #eff6ff;
+      color: #2563eb;
+      font-weight: 600;
+      border-right: 3px solid #2563eb;
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body class="bg-surface-canvas text-slate-800 font-sans antialiased min-h-screen flex selection:bg-brand-100 selection:text-brand-900">
+  
+  <!-- ================= MOBILE OVERLAY BACKDROP ================= -->
+  <div id="mobileBackdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-40 hidden lg:hidden transition-opacity"></div>
+
+  <!-- ================= PERSISTENT FINTECH SIDEBAR ================= -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-surface-border flex flex-col h-screen transition-transform duration-200 -translate-x-full lg:translate-x-0">
+    <!-- Top Branding & Workstation Tag (Pinned Header) -->
+    <div class="h-16 px-5 border-b border-surface-border flex items-center justify-between shrink-0">
+      <a href="{{ url_for('dashboard') }}" class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-sm shadow-brand-500/25">
+          <span class="material-symbols-outlined text-[20px]">shield</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-sm font-bold text-slate-900 tracking-tight leading-none">FraudGuard AI</span>
+          <span class="text-[10px] font-mono uppercase tracking-wider text-brand-600 font-semibold mt-1">FinTech Defense v2.4</span>
+        </div>
+      </a>
+      <button type="button" onclick="toggleSidebar()" class="lg:hidden p-1 text-slate-400 hover:text-slate-700">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <!-- Scrollable Navigation Section -->
+    <div class="flex-1 min-h-0 overflow-y-auto p-3 space-y-1">
+      <nav class="space-y-1">
+        <div class="px-3 pt-2 pb-1 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Operations</div>
+        
+        <!-- Dashboard -->
+        <a href="{{ url_for('dashboard') }}" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors {% if request.endpoint == 'dashboard' %}nav-item-active{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+          <div class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-[18px]">dashboard</span>
+            <span>Dashboard</span>
+          </div>
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold">Live</span>
+        </a>
+
+        <!-- Transactions -->
+        <a href="{{ url_for('results') }}" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors {% if request.endpoint == 'results' %}nav-item-active{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+          <div class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-[18px]">receipt_long</span>
+            <span>Transactions</span>
+          </div>
+          <span class="text-[10px] font-mono text-slate-400">All</span>
+        </a>
+
+        <!-- Analytics & Trends -->
+        <a href="{{ url_for('analytics') }}" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors {% if request.endpoint == 'analytics' %}nav-item-active{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+          <div class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-[18px] text-brand-600">insights</span>
+            <span>Analytics</span>
+          </div>
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-semibold">Trends</span>
+        </a>
+
+        <!-- Detect Fraud -->
+        <a href="{{ url_for('analyze') }}" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors {% if request.endpoint == 'analyze' %}nav-item-active{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+          <div class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-[18px]">query_stats</span>
+            <span>Detect Fraud</span>
+          </div>
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-brand-50 text-brand-700 font-medium">Single Txn</span>
+        </a>
+
+        <!-- Batch Analysis -->
+        <a href="{{ url_for('upload') }}" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors {% if request.endpoint == 'upload' %}nav-item-active{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+          <div class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-[18px]">upload_file</span>
+            <span>Batch Analysis</span>
+          </div>
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">CSV</span>
+        </a>
+
+        <!-- Live Simulation Stream -->
+        <a href="{{ url_for('simulate') }}" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors {% if request.endpoint == 'simulate' %}nav-item-active{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+          <div class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-[18px] text-brand-600">sensors</span>
+            <span>Live Simulator</span>
+          </div>
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-brand-50 text-brand-700 font-bold animate-pulse">Stream</span>
+        </a>
+
+        <div class="px-3 pt-4 pb-1 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Triage & Governance</div>
+
+        <!-- Fraud Alerts Queue -->
+        <a href="{{ url_for('alerts') }}" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors {% if request.endpoint == 'alerts' %}nav-item-active{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+          <div class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-[18px] text-rose-500">crisis_alert</span>
+            <span>Fraud Alerts</span>
+          </div>
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-600 font-bold border border-rose-200">Triage</span>
+        </a>
+
+        <!-- Model Insights -->
+        <a href="{{ url_for('model_insights') }}" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors {% if request.endpoint == 'model_insights' %}nav-item-active{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+          <div class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-[18px] text-brand-600">psychology</span>
+            <span>Model Insights</span>
+          </div>
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-brand-50 text-brand-700 font-bold">RF-v1</span>
+        </a>
+
+        <!-- Station Settings -->
+        <a href="{{ url_for('settings') }}" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs transition-colors {% if request.endpoint == 'settings' %}nav-item-active{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+          <div class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-[18px] text-slate-500">tune</span>
+            <span>Settings</span>
+          </div>
+          <span class="text-[10px] font-mono text-slate-400">Config</span>
+        </a>
+
+        <!-- Export CSV Report -->
+        <a href="{{ url_for('report_csv') }}" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+          <div class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined text-[18px]">download</span>
+            <span>Export Report</span>
+          </div>
+          <span class="text-[10px] font-mono text-slate-400">.CSV</span>
+        </a>
+      </nav>
+    </div>
+
+    <!-- Pinned Bottom User Workstation Profile -->
+    <div class="p-3 border-t border-surface-border bg-slate-50/50 shrink-0">
+      <div class="bg-white border border-surface-border rounded-xl p-3 shadow-sm flex items-center justify-between">
+        <a href="{{ url_for('settings') }}" class="flex items-center gap-2.5 min-w-0 hover:opacity-80 transition-opacity">
+          <div class="w-8 h-8 rounded-lg bg-brand-100 text-brand-700 font-bold flex items-center justify-center shrink-0 text-xs">
+            {{ session.name[:2].upper() if session.name else 'AN' }}
+          </div>
+          <div class="flex flex-col min-w-0 text-left">
+            <span class="text-xs font-bold text-slate-900 truncate leading-tight">{{ session.name or 'Analyst' }}</span>
+            <span class="text-[10px] font-mono text-slate-500 capitalize leading-none mt-0.5">{{ session.role or 'Analyst' }} Workstation</span>
+          </div>
+        </a>
+        <div class="flex items-center gap-1">
+          <a href="{{ url_for('settings') }}" title="Workstation Settings" class="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors">
+            <span class="material-symbols-outlined text-[18px]">settings</span>
+          </a>
+          <a href="{{ url_for('logout') }}" title="Sign Out of Station" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+            <span class="material-symbols-outlined text-[18px]">logout</span>
+          </a>
+        </div>
+      </div>
+      <div class="mt-2 text-center text-[10px] font-mono text-slate-400">
+        SecOps Incident Station • Production v2.4
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN WRAPPER & TOPBAR ================= -->
+  <div class="flex-1 flex flex-col min-w-0 lg:pl-64">
+    
+    <!-- Top App Header -->
+    <header class="h-16 bg-white/90 backdrop-blur-md border-b border-surface-border sticky top-0 z-30 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+      <!-- Left: Mobile Toggle & Search Bar -->
+      <div class="flex items-center gap-3 flex-1 max-w-xl">
+        <button type="button" onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100">
+          <span class="material-symbols-outlined text-[22px]">menu</span>
+        </button>
+
+        <!-- Search Bar -->
+        <div class="relative w-full max-w-md hidden sm:block">
+          <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-[18px]">search</span>
+          <input 
+            type="text" 
+            placeholder="Search transactions, alert IDs, cards..." 
+            class="w-full bg-slate-50 border border-slate-200 text-xs text-slate-800 rounded-lg py-2 pl-9 pr-8 focus:bg-white focus:border-brand-600 focus:ring-2 focus:ring-brand-500/10 focus:outline-none transition"
+          />
+          <span class="absolute right-2.5 top-2.5 text-[10px] font-mono text-slate-400 bg-slate-200/60 px-1.5 py-0.5 rounded">⌘K</span>
+        </div>
+      </div>
+
+      <!-- Right: Real-time Telemetry, Alert Bell & Quick Action -->
+      <div class="flex items-center gap-3">
+        <!-- Telemetry Status Pill -->
+        <div class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full text-xs font-mono">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-slate-700 font-medium">Engine Operational</span>
+          <span class="text-slate-300">•</span>
+          <span class="text-slate-500">14ms</span>
+        </div>
+
+        <!-- Quick CTA: Analyze Transaction -->
+        <a href="{{ url_for('analyze') }}" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm flex items-center gap-1.5 transition">
+          <span class="material-symbols-outlined text-[16px]">add_circle</span>
+          <span class="hidden sm:inline">Analyze Txn</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- Global Flash Notification Messages -->
+    <div class="px-4 sm:px-6 lg:px-8 pt-4">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="p-3.5 rounded-xl border text-xs flex items-center justify-between mb-3 shadow-sm transition-all {% if category == 'error' %}bg-rose-50 border-rose-200 text-rose-800{% else %}bg-emerald-50 border-emerald-200 text-emerald-800{% endif %}">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px]">{% if category == 'error' %}error{% else %}check_circle{% endif %}</span>
+                <span class="font-medium">{{ msg }}</span>
+              </div>
+              <button type="button" onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-700 text-xs">✕</button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+    </div>
+
+    <!-- Main Page Injection Block -->
+    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-6">
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- App Shell Footer -->
+    <footer class="h-12 border-t border-surface-border px-4 sm:px-6 lg:px-8 flex items-center justify-between text-xs text-slate-500 font-mono bg-white">
+      <div>FraudGuard AI • Enterprise Threat Intelligence & Risk Platform</div>
+      <div class="flex items-center gap-3 text-slate-400">
+        <span>ENCRYPTED SOC WORKSTATION</span>
+        <span>•</span>
+        <span>v2.4 PRODUCTION CORE</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Sidebar Mobile Toggle Script -->
+  <script>
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('mobileBackdrop');
+      const isClosed = sidebar.classList.contains('-translate-x-full');
+      
+      if (isClosed) {
+        sidebar.classList.remove('-translate-x-full');
+        backdrop.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
+      }
+    }
+  </script>
+</body>
+</html>
